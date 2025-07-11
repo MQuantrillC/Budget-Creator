@@ -1,33 +1,28 @@
-import Link from 'next/link';
+import { Inter } from 'next/font/google';
 import './globals.css';
 import { BudgetProvider } from '@/context/BudgetContext';
+import { Toaster } from 'react-hot-toast';
+
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
   title: 'Budget Creator',
-  description: 'Create and manage your budget with ease.',
+  description: 'A personal budgeting tool to project your finances.',
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <BudgetProvider>
-        <body>
-          <nav className="p-4 bg-gray-100">
-            <ul className="flex space-x-4">
-              <li>
-                <Link href="/">Dashboard</Link>
-              </li>
-              <li>
-                <Link href="/entries">Entries</Link>
-              </li>
-              <li>
-                <Link href="/settings">Settings</Link>
-              </li>
-            </ul>
-          </nav>
-          <main className="p-4">{children}</main>
-        </body>
-      </BudgetProvider>
+      <body className="font-sans">
+        <BudgetProvider>
+          <div className="flex flex-col min-h-screen">
+            <main className="flex-grow">
+              {children}
+            </main>
+            <Toaster position="bottom-right" />
+          </div>
+        </BudgetProvider>
+      </body>
     </html>
   );
 } 
