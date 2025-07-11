@@ -13,7 +13,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className="font-sans">
+      <body className={`${inter.className} font-sans`}>
         <BudgetProvider>
           <div className="flex flex-col min-h-screen">
             <main className="flex-grow">

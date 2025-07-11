@@ -92,7 +92,7 @@ export default function Charts() {
                 Income: monthlyIncome,
             };
         });
-    }, [costs, income, currentCapital, exchangeRates, startDate, projectionDisplayCurrency, startingCapitalCurrency, settings.baseCurrency]);
+    }, [costs, income, currentCapital, exchangeRates, startDate, projectionDisplayCurrency, startingCapitalCurrency, settings.baseCurrency, convertToBaseCurrency, convertToDisplayCurrency]);
 
 
     if (!exchangeRates) {

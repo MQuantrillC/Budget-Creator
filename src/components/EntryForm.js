@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useBudget } from '@/context/BudgetContext';
-import { Plus, ArrowDownUp, Repeat, LayoutGrid, CircleDollarSign, Landmark, CalendarDays } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 function FormSection({ title, children }) {
   return (
@@ -164,7 +164,7 @@ export default function EntryForm() {
             </FormField>
             <FormField label="Currency" required>
               <Select value={currency} onChange={(e) => setCurrency(e.target.value)}>
-                {settings.availableCurrencies.map((c, index) => (
+                {settings.availableCurrencies.map((c) => (
                   <option key={c.code} value={c.code}>
                     {c.code} - {c.name}
                   </option>

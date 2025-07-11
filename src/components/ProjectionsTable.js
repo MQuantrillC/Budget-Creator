@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useBudget } from '@/context/BudgetContext';
-import { addWeeks, addMonths, addYears, format, startOfWeek, isWithinInterval } from 'date-fns';
+import { addWeeks, addMonths, addYears, format, isWithinInterval } from 'date-fns';
 
 export default function ProjectionsTable() {
   const { 
@@ -151,7 +151,7 @@ export default function ProjectionsTable() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {data.map((proj, index) => (
+            {data.map((proj) => (
               <tr key={proj.period} className="hover:bg-background transition-colors">
                 <td className="p-4 text-text-primary whitespace-nowrap">{proj.period}</td>
                 <td className="p-4 text-red-400 font-mono text-right whitespace-nowrap">-{new Intl.NumberFormat('en-US', { style: 'currency', currency: projectionDisplayCurrency }).format(proj.costs)}</td>

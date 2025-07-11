@@ -27,12 +27,6 @@ export default function CurrentCapitalForm() {
   const [amount, setAmount] = useState(currentCapital.toString());
   const [displayAmount, setDisplayAmount] = useState(formatNumberWithCommas(currentCapital));
 
-  // Remove commas and return numeric value
-  const parseNumberFromDisplay = (displayValue) => {
-    if (!displayValue) return '';
-    return displayValue.replace(/,/g, '');
-  };
-
   useEffect(() => {
     setAmount(currentCapital.toString());
     setDisplayAmount(formatNumberWithCommas(currentCapital));
