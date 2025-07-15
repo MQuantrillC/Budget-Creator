@@ -272,7 +272,7 @@ export default function HomePage() {
                         <p className="font-semibold text-gray-800 dark:text-gray-200 text-sm truncate">{cost.description}</p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{cost.category}</p>
                         {cost.notes && (
-                          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 italic">"{cost.notes}"</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 italic">&ldquo;{cost.notes}&rdquo;</p>
                         )}
                       </div>
                       <div className="flex items-center space-x-3 ml-4">
@@ -317,7 +317,7 @@ export default function HomePage() {
                         <p className="font-semibold text-gray-800 dark:text-gray-200 text-sm truncate">{inc.description}</p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{inc.category}</p>
                         {inc.notes && (
-                          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 italic">"{inc.notes}"</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 italic">&ldquo;{inc.notes}&rdquo;</p>
                         )}
                       </div>
                       <div className="flex items-center space-x-3 ml-4">

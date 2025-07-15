@@ -127,7 +127,7 @@ export default function Charts() {
                 Income: monthlyIncome,
             };
         });
-    }, [filteredCosts, filteredIncome, currentCapital, exchangeRates, startDate, timeframe, projectionDisplayCurrency, startingCapitalCurrency, settings.baseCurrency, convertToBaseCurrency, convertToDisplayCurrency]);
+    }, [filteredCosts, filteredIncome, currentCapital, startDate, startingCapitalCurrency, settings.baseCurrency, convertToBaseCurrency, convertToDisplayCurrency, getTimeframePeriods]);
 
 
     if (!exchangeRates) {
