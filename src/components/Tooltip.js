@@ -26,10 +26,10 @@ export default function Tooltip({ children, text }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 5 }}
             transition={{ duration: 0.2 }}
-            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-max max-w-xs px-3 py-1.5 bg-card-bg text-text-primary text-xs font-semibold rounded-md shadow-lg z-50"
+            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-max max-w-xs px-3 py-1.5 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-xs font-semibold rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-50"
           >
             {text}
-            <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-card-bg" />
+            <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-white dark:border-t-gray-800" />
           </motion.div>
         )}
       </AnimatePresence>

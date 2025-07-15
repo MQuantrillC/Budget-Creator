@@ -79,7 +79,7 @@ export default function CurrentCapitalForm() {
         {/* Amount Input */}
         <div className="relative">
           <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-            <Banknote className="h-5 w-5 text-gray-400" />
+            <Banknote className="h-5 w-5 text-gray-400 dark:text-gray-500" />
           </div>
           <input
             id="current-capital"
@@ -88,7 +88,7 @@ export default function CurrentCapitalForm() {
             onChange={handleChange}
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
-            className="w-full pl-10 pr-4 py-3 text-xl font-semibold text-center bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 placeholder-gray-500"
+            className="w-full pl-10 pr-4 py-3 text-xl font-semibold text-center bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 transition-all duration-200 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100"
             placeholder="0"
           />
         </div>
@@ -98,7 +98,7 @@ export default function CurrentCapitalForm() {
           <select
             value={startingCapitalCurrency}
             onChange={(e) => setStartingCapitalCurrency(e.target.value)}
-            className="w-full py-3 px-4 text-center bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 appearance-none font-medium text-gray-700"
+            className="w-full py-3 px-4 text-center bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 transition-all duration-200 appearance-none font-medium text-gray-700 dark:text-gray-300"
           >
             {settings.availableCurrencies.map((c) => (
               <option key={c.code} value={c.code}>
@@ -107,7 +107,7 @@ export default function CurrentCapitalForm() {
             ))}
           </select>
           <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-            <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="h-5 w-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
           </div>
@@ -117,7 +117,7 @@ export default function CurrentCapitalForm() {
       {/* Conversion Display */}
       {convertedAmount() && (
         <div className="text-center">
-          <p className="text-sm text-gray-600 bg-gray-50 rounded-lg px-3 py-2 inline-block">
+          <p className="text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2 inline-block">
             {convertedAmount()} in {settings.baseCurrency}
           </p>
         </div>

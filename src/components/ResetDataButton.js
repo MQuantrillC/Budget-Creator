@@ -18,7 +18,7 @@ export default function ResetDataButton() {
   return (
     <button
       onClick={handleClick}
-      className="flex items-center px-3 py-1.5 border border-gray-300 rounded-lg text-xs text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition-colors"
+      className="flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
     >
       <Eraser className="h-3 w-3 mr-1.5" />
       Reset Data

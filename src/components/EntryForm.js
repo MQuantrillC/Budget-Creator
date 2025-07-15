@@ -7,7 +7,7 @@ import { Plus } from 'lucide-react';
 function FormSection({ title, children }) {
   return (
     <div className="space-y-3">
-      {title && <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">{title}</h4>}
+      {title && <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">{title}</h4>}
       {children}
     </div>
   );
@@ -21,7 +21,7 @@ function FormRow({ children, columns = 1 }) {
 function FormField({ label, children, required = false }) {
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-700">
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
         {label}
         {required && <span className="text-red-500 ml-1">*</span>}
       </label>
@@ -34,7 +34,7 @@ function Input({ className = "", ...props }) {
   return (
     <input 
       {...props} 
-      className={`w-full px-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 placeholder-gray-400 ${className}`} 
+      className={`w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 transition-all duration-200 placeholder-gray-400 dark:placeholder-gray-500 text-gray-900 dark:text-gray-100 ${className}`} 
     />
   );
 }
@@ -43,7 +43,7 @@ function Select({ className = "", children, ...props }) {
   return (
     <select 
       {...props} 
-      className={`w-full px-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg appearance-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${className}`}
+      className={`w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg appearance-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 transition-all duration-200 text-gray-900 dark:text-gray-100 ${className}`}
     >
       {children}
     </select>
@@ -55,6 +55,7 @@ export default function EntryForm() {
   const [entryType, setEntryType] = useState('cost');
   const [description, setDescription] = useState('');
   const [customDescription, setCustomDescription] = useState('');
+  const [optionalDescription, setOptionalDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState(settings.baseCurrency);
   const [frequency, setFrequency] = useState('monthly');
@@ -74,8 +75,21 @@ export default function EntryForm() {
     'Healthcare', 'Education', 'Shopping', 'Other'
   ];
   
-  const costFrequencies = ['one-time', 'monthly', 'weekly', 'yearly'];
-  const incomeFrequencies = ['one-time', 'monthly', 'biweekly', 'yearly'];
+  // Updated frequency options with proper order
+  const costFrequencies = ['one-time', 'weekly', 'biweekly', 'monthly', 'semiannually', 'yearly'];
+  const incomeFrequencies = ['one-time', 'weekly', 'biweekly', 'monthly', 'semiannually', 'yearly'];
+
+  const formatFrequencyLabel = (frequency) => {
+    switch (frequency) {
+      case 'one-time': return 'One time';
+      case 'weekly': return 'Weekly';
+      case 'biweekly': return 'Biweekly';
+      case 'monthly': return 'Monthly';
+      case 'semiannually': return 'Semiannually';
+      case 'yearly': return 'Yearly';
+      default: return frequency.charAt(0).toUpperCase() + frequency.slice(1);
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -86,6 +100,7 @@ export default function EntryForm() {
       currency,
       category: frequency,
       date: frequency === 'one-time' ? date : undefined,
+      notes: optionalDescription.trim() || undefined, // Only include if not empty
     };
 
     if (entryType === 'cost') addCost(newEntry);
@@ -94,6 +109,7 @@ export default function EntryForm() {
     // Reset form
     setDescription('');
     setCustomDescription('');
+    setOptionalDescription('');
     setAmount('');
     setCurrency(settings.baseCurrency);
     setFrequency('monthly');
@@ -116,7 +132,7 @@ export default function EntryForm() {
               <Select value={frequency} onChange={(e) => setFrequency(e.target.value)}>
                 {(entryType === 'cost' ? costFrequencies : incomeFrequencies).map(f => (
                   <option key={f} value={f}>
-                    {f.charAt(0).toUpperCase() + f.slice(1).replace('-', ' ')}
+                    {formatFrequencyLabel(f)}
                   </option>
                 ))}
               </Select>
@@ -148,6 +164,18 @@ export default function EntryForm() {
           )}
         </FormSection>
 
+        {/* Optional Description */}
+        <FormSection>
+          <FormField label="Add Description (Optional)">
+            <Input 
+              type="text" 
+              value={optionalDescription} 
+              onChange={(e) => setOptionalDescription(e.target.value)} 
+              placeholder="e.g., Monthly Netflix Subscription" 
+            />
+          </FormField>
+        </FormSection>
+
         {/* Amount and Currency */}
         <FormSection>
           <FormRow columns={2}>
@@ -175,7 +203,7 @@ export default function EntryForm() {
           
           {convertedAmount() && (
             <div className="text-center">
-              <p className="text-sm text-gray-600 bg-gray-50 rounded-lg px-3 py-2 inline-block">
+              <p className="text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2 inline-block">
                 {convertedAmount()} in {settings.baseCurrency}
               </p>
             </div>
@@ -199,7 +227,7 @@ export default function EntryForm() {
         <div className="pt-2">
           <button 
             type="submit" 
-            className="w-full flex items-center justify-center space-x-2 px-5 py-3 bg-blue-600 text-white rounded-xl font-semibold text-base transition-all duration-200 ease-in-out hover:bg-blue-700 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transform"
+            className="w-full flex items-center justify-center space-x-2 px-5 py-3 bg-blue-600 dark:bg-blue-500 text-white rounded-xl font-semibold text-base transition-all duration-200 ease-in-out hover:bg-blue-700 dark:hover:bg-blue-600 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800 transform"
           >
             <Plus size={20} />
             <span>Add {entryType === 'cost' ? 'Expense' : 'Income'}</span>

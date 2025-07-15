@@ -34,6 +34,12 @@ function usePersistentState(key, defaultValue) {
   return [state, setState];
 }
 
+// Helper function to get first day of current month
+const getFirstDayOfCurrentMonth = () => {
+  const now = new Date();
+  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+  return firstDay.toISOString().split('T')[0]; // YYYY-MM-DD format
+};
 
 const BudgetContext = createContext();
 
@@ -49,9 +55,10 @@ const initialDummyData = {
     availableCurrencies: currencies,
   },
   currentCapital: 0,
-  startDate: new Date().toISOString().split('T')[0], // YYYY-MM-DD
+  startDate: getFirstDayOfCurrentMonth(), // First day of current month
   startingCapitalCurrency: 'EUR',
   projectionDisplayCurrency: 'EUR',
+  timeframe: '1Y', // 6M, 1Y, 2Y, 3Y
 };
 
 export function BudgetProvider({ children }) {
@@ -60,15 +67,16 @@ export function BudgetProvider({ children }) {
   const [settings, setSettings] = usePersistentState('settings', initialDummyData.settings);
   const [startingCapitalCurrency, setStartingCapitalCurrency] = usePersistentState('startingCapitalCurrency', initialDummyData.startingCapitalCurrency);
   const [projectionDisplayCurrency, setProjectionDisplayCurrency] = usePersistentState('projectionDisplayCurrency', initialDummyData.projectionDisplayCurrency);
+  const [timeframe, setTimeframe] = usePersistentState('timeframe', initialDummyData.timeframe);
   const [currentCapital, setCurrentCapital] = useState(() => {
     if (typeof window === 'undefined') return 0;
     const saved = localStorage.getItem('currentCapital');
     return saved ? JSON.parse(saved) : 0;
   });
   const [startDate, setStartDate] = useState(() => {
-    if (typeof window === 'undefined') return '2024-01-01';
+    if (typeof window === 'undefined') return getFirstDayOfCurrentMonth();
     const saved = localStorage.getItem('startDate');
-    return saved ? JSON.parse(saved) : '2024-01-01';
+    return saved ? JSON.parse(saved) : getFirstDayOfCurrentMonth();
   });
   const [exchangeRates, setExchangeRates] = useState(null);
 
@@ -112,7 +120,8 @@ export function BudgetProvider({ children }) {
     localStorage.setItem('settings', JSON.stringify(settings));
     localStorage.setItem('currentCapital', JSON.stringify(currentCapital));
     localStorage.setItem('startDate', JSON.stringify(startDate));
-  }, [costs, income, settings, currentCapital, startDate]);
+    localStorage.setItem('timeframe', JSON.stringify(timeframe));
+  }, [costs, income, settings, currentCapital, startDate, timeframe]);
 
   const value = {
     costs,
@@ -129,6 +138,8 @@ export function BudgetProvider({ children }) {
     setStartingCapitalCurrency,
     projectionDisplayCurrency,
     setProjectionDisplayCurrency,
+    timeframe,
+    setTimeframe,
     addCost,
     addIncome,
     deleteCost,
