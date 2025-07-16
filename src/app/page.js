@@ -8,26 +8,26 @@ import EntryForm from '@/components/EntryForm';
 import ClientOnly from '@/components/ClientOnly';
 import CurrentCapitalForm from '@/components/CurrentCapitalForm';
 import FinancialProjectionControls from '@/components/FinancialProjectionControls';
-import ThemeToggle from '@/components/ThemeToggle';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/Card';
 import { Wallet, TrendingUp, TrendingDown, Flame, Calculator, Target, X } from 'lucide-react';
 import ResetDataButton from '@/components/ResetDataButton';
+import ExchangeRatesTooltip from '@/components/ExchangeRatesTooltip';
 
 function MetricCard({ icon: Icon, title, value, tooltipText, color = 'default' }) {
   const colorClasses = {
-    default: 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700',
-    green: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800',
-    blue: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800',
-    red: 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800',
-    orange: 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800',
+    default: 'bg-gray-800 border-gray-700',
+    green: 'bg-green-900/20 border-green-800',
+    blue: 'bg-blue-900/20 border-blue-800',
+    red: 'bg-red-900/20 border-red-800',
+    orange: 'bg-orange-900/20 border-orange-800',
   };
 
   const iconColorClasses = {
-    default: 'text-gray-500 dark:text-gray-400',
-    green: 'text-green-600 dark:text-green-400',
-    blue: 'text-blue-600 dark:text-blue-400',
-    red: 'text-red-600 dark:text-red-400',
-    orange: 'text-orange-600 dark:text-orange-400',
+    default: 'text-gray-400',
+    green: 'text-green-400',
+    blue: 'text-blue-400',
+    red: 'text-red-400',
+    orange: 'text-orange-400',
   };
 
   return (
@@ -35,11 +35,11 @@ function MetricCard({ icon: Icon, title, value, tooltipText, color = 'default' }
       <div className={`${colorClasses[color]} border p-4 rounded-xl transition-all duration-200 hover:shadow-lg group cursor-pointer`}>
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">{title}</p>
-            <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{value}</p>
+            <p className="text-sm font-medium text-gray-400 mb-1">{title}</p>
+            <p className="text-xl font-bold text-gray-100">{value}</p>
           </div>
           <div className="flex-shrink-0 ml-4">
-            <div className={`p-2 rounded-full bg-white dark:bg-gray-700 shadow-sm group-hover:shadow-md transition-shadow duration-200`}>
+            <div className={`p-2 rounded-full bg-gray-700 shadow-sm group-hover:shadow-md transition-shadow duration-200`}>
               <Icon className={`h-5 w-5 ${iconColorClasses[color]}`} />
             </div>
           </div>
@@ -113,53 +113,53 @@ export default function HomePage() {
 
   if (!exchangeRates) {
     return (
-      <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
-          <div className="text-gray-600 dark:text-gray-400 text-lg">Loading financial data...</div>
+          <div className="text-gray-400 text-lg">Loading financial data...</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900">
-      {/* Header with Theme Toggle */}
-      <div className="sticky top-0 z-10 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700">
+    <div className="min-h-screen bg-gray-900">
+      {/* Header */}
+      <div className="sticky top-0 z-10 bg-gray-900/80 backdrop-blur-sm border-b border-gray-700">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-end">
-          <ThemeToggle />
+          <ExchangeRatesTooltip />
         </div>
       </div>
 
       {/* Hero Section with Entry Forms */}
-      <div className="relative py-8 px-4 bg-white dark:bg-gray-900">
+      <div className="relative py-8 px-4 bg-gray-900">
         <div className="max-w-4xl mx-auto text-center mb-6">
           <div className="flex items-center justify-center mb-4">
-            <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-900/30 shadow-sm">
-              <Calculator className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            <div className="p-3 rounded-full bg-blue-900/30 shadow-sm">
+              <Calculator className="h-6 w-6 text-blue-400" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-3">
+          <h1 className="text-3xl font-bold text-gray-100 mb-3">
             Budget Creator
           </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
+          <p className="text-lg text-gray-400 mb-6">
             Take control of your finances with intelligent budgeting and projections
           </p>
         </div>
 
         {/* Main Entry Section - The Dominant Component */}
         <div className="max-w-4xl mx-auto">
-          <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden fade-in">
+          <div className="bg-gray-800 rounded-3xl shadow-xl border border-gray-700 overflow-hidden fade-in">
             <div className="p-6 lg:p-8">
               <div className="space-y-6">
                 {/* Current Capital Section */}
                 <div className="text-center">
                   <div className="flex items-center justify-center mb-3">
-                    <div className="p-2 rounded-full bg-blue-100 dark:bg-blue-900/30">
-                      <Target className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    <div className="p-2 rounded-full bg-blue-900/30">
+                      <Target className="h-5 w-5 text-blue-400" />
                     </div>
                   </div>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">Set Your Starting Capital</h2>
+                  <h2 className="text-xl font-bold text-gray-100 mb-4">Set Your Starting Capital</h2>
                   <ClientOnly>
                     <CurrentCapitalForm />
                   </ClientOnly>
@@ -168,10 +168,10 @@ export default function HomePage() {
                 {/* Divider */}
                 <div className="relative py-2">
                   <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
+                    <div className="w-full border-t border-gray-700"></div>
                   </div>
                   <div className="relative flex justify-center">
-                    <div className="bg-white dark:bg-gray-800 px-3 text-gray-500 dark:text-gray-400 text-xs font-medium">
+                    <div className="bg-gray-800 px-3 text-gray-400 text-xs font-medium">
                       Add Income & Expenses
                     </div>
                   </div>
@@ -180,11 +180,11 @@ export default function HomePage() {
                 {/* Entry Form Section */}
                 <div className="text-center">
                   <div className="flex items-center justify-center mb-3">
-                    <div className="p-2 rounded-full bg-blue-100 dark:bg-blue-900/30">
-                      <Wallet className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    <div className="p-2 rounded-full bg-blue-900/30">
+                      <Wallet className="h-5 w-5 text-blue-400" />
                     </div>
                   </div>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">Track Your Finances</h2>
+                  <h2 className="text-xl font-bold text-gray-100 mb-4">Track Your Finances</h2>
                   <EntryForm />
                 </div>
               </div>
@@ -194,16 +194,16 @@ export default function HomePage() {
       </div>
 
       {/* Metrics Section */}
-      <div className="py-12 px-4 bg-white dark:bg-gray-900">
+      <div className="py-12 px-4 bg-gray-900">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3">Financial Overview</h2>
+            <h2 className="text-2xl font-bold text-gray-100 mb-3">Financial Overview</h2>
             <div className="flex justify-center items-center space-x-2 mt-2">
-              <p className="text-sm text-gray-600 dark:text-gray-400">Display Currency:</p>
+              <p className="text-sm text-gray-400">Display Currency:</p>
               <select
                 value={settings.baseCurrency}
                 onChange={(e) => setSettings({ ...settings, baseCurrency: e.target.value })}
-                className="px-2 py-1 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg appearance-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 text-gray-900 dark:text-gray-100"
+                className="px-2 py-1 text-sm bg-gray-700 border border-gray-600 rounded-lg appearance-none focus:ring-1 focus:ring-blue-400 focus:border-blue-400 text-gray-100"
               >
                 {settings.availableCurrencies.map(c => (
                   <option key={c.code} value={c.code}>{c.code}</option>

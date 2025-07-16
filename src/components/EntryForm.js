@@ -69,10 +69,15 @@ export default function EntryForm() {
     return `≈ ${new Intl.NumberFormat('en-US', { style: 'currency', currency: settings.baseCurrency }).format(converted)}`;
   }
 
-  const defaultCategories = [
+  const expenseCategories = [
     'Accommodation', 'Groceries', 'Restaurant & Bars', 'Transport', 
     'Insurance', 'Mobile', 'Internet', 'Subscription', 'Entertainment',
     'Healthcare', 'Education', 'Shopping', 'Other'
+  ];
+
+  const incomeCategories = [
+    'Main Job', 'Second Job', 'Freelance', 'Passive Income', 'Rental Income', 
+    'Allowance', 'Government Support', 'Other'
   ];
   
   // Updated frequency options with proper order
@@ -123,7 +128,11 @@ export default function EntryForm() {
         <FormSection>
           <FormRow columns={2}>
             <FormField label="Type" required>
-              <Select value={entryType} onChange={(e) => setEntryType(e.target.value)}>
+              <Select value={entryType} onChange={(e) => {
+                setEntryType(e.target.value);
+                setDescription(''); // Reset category when type changes
+                setCustomDescription(''); // Reset custom category
+              }}>
                 <option key="cost" value="cost">Expense</option>
                 <option key="income" value="income">Income</option>
               </Select>
@@ -145,7 +154,7 @@ export default function EntryForm() {
           <FormField label="Choose Category" required>
             <Select value={description} onChange={(e) => setDescription(e.target.value)}>
               <option key="disabled" value="" disabled>Select a category...</option>
-              {defaultCategories.map(c => (
+              {(entryType === 'cost' ? expenseCategories : incomeCategories).map(c => (
                 <option key={c} value={c}>{c}</option>
               ))}
               <option key="custom" value="Add Custom Category">Add Custom Category...</option>
@@ -158,7 +167,7 @@ export default function EntryForm() {
                 type="text" 
                 value={customDescription} 
                 onChange={(e) => setCustomDescription(e.target.value)} 
-                placeholder="e.g., Coffee, Gym membership..." 
+                placeholder={entryType === 'cost' ? "e.g., Coffee, Gym membership..." : "e.g., Weekend Job, Photography Gig..."} 
               />
             </FormField>
           )}

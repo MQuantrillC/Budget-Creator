@@ -68,6 +68,20 @@ export function BudgetProvider({ children }) {
   const [startingCapitalCurrency, setStartingCapitalCurrency] = usePersistentState('startingCapitalCurrency', initialDummyData.startingCapitalCurrency);
   const [projectionDisplayCurrency, setProjectionDisplayCurrency] = usePersistentState('projectionDisplayCurrency', initialDummyData.projectionDisplayCurrency);
   const [timeframe, setTimeframe] = usePersistentState('timeframe', initialDummyData.timeframe);
+  
+  // Update available currencies if they've changed (e.g., PEN was removed)
+  useEffect(() => {
+    const currentCurrencyCodes = settings.availableCurrencies.map(c => c.code);
+    const newCurrencyCodes = currencies.map(c => c.code);
+    
+    // Check if currencies have changed (e.g., PEN was removed)
+    if (JSON.stringify(currentCurrencyCodes) !== JSON.stringify(newCurrencyCodes)) {
+      setSettings({
+        ...settings,
+        availableCurrencies: currencies
+      });
+    }
+  }, [settings.availableCurrencies, currencies]);
   const [currentCapital, setCurrentCapital] = useState(() => {
     if (typeof window === 'undefined') return 0;
     const saved = localStorage.getItem('currentCapital');
@@ -112,6 +126,8 @@ export function BudgetProvider({ children }) {
     setCosts([]);
     setIncome([]);
     setCurrentCapital(0);
+    // Also reset settings to ensure currencies are updated
+    setSettings(initialDummyData.settings);
   };
 
   useEffect(() => {

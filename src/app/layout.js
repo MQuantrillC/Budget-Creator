@@ -1,8 +1,8 @@
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { BudgetProvider } from '@/context/BudgetContext';
-import { ThemeProvider } from '@/context/ThemeContext';
 import { Toaster } from 'react-hot-toast';
+import Footer from '@/components/Footer';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -28,18 +28,20 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
+      <head>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+      </head>
       <body className={`${inter.className} font-sans transition-colors duration-200`}>
-        <ThemeProvider>
-          <BudgetProvider>
-            <div className="flex flex-col min-h-screen">
-              <main className="flex-grow">
-                {children}
-              </main>
-              <Toaster position="bottom-right" />
-            </div>
-          </BudgetProvider>
-        </ThemeProvider>
+        <BudgetProvider>
+          <div className="flex flex-col min-h-screen">
+            <main className="flex-grow">
+              {children}
+            </main>
+            <Footer />
+            <Toaster position="bottom-right" />
+          </div>
+        </BudgetProvider>
       </body>
     </html>
   );

@@ -8,5 +8,4 @@ export const currencies = [
   { code: 'JPY', name: 'Japanese Yen' },
   { code: 'CNY', name: 'Chinese Yuan' },
   { code: 'BRL', name: 'Brazilian Real' },
-  { code: 'PEN', name: 'Peruvian Sol' },
 ]; 
