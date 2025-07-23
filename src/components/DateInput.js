@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Calendar } from 'lucide-react';
 
 // Custom date input component that works with DD/MM/YYYY format
-export default function DateInput({ value, onChange, className = "", placeholder = "DD/MM/YYYY", required = false, ...props }) {
+export default function DateInput({ value, onChange, className = "", placeholder = "DD/MM/YYYY", ...props }) {
   const [displayValue, setDisplayValue] = useState('');
   const [showPicker, setShowPicker] = useState(false);
   const [pickerValue, setPickerValue] = useState('');

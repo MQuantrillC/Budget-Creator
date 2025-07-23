@@ -1,9 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Line, BarChart, Bar } from 'recharts';
 import { useBudget } from '@/context/BudgetContext';
-import { addMonths, format, isWithinInterval } from 'date-fns';
+import { addMonths, format } from 'date-fns';
 
 const CustomTooltip = ({ active, payload, label, currency }) => {
     if (active && payload && payload.length) {
@@ -38,13 +38,13 @@ export default function Charts() {
 
     const [selectedCategory, setSelectedCategory] = useState('all');
 
-    const convertToBaseCurrency = (amount, currency) => {
+    const convertToBaseCurrency = useCallback((amount, currency) => {
         if (!exchangeRates || currency === settings.baseCurrency) return amount;
         const rate = exchangeRates[currency];
         return rate ? amount / rate : amount;
-    };
+    }, [exchangeRates, settings.baseCurrency]);
 
-    const convertToDisplayCurrency = (amount, fromCurrency) => {
+    const convertToDisplayCurrency = useCallback((amount, fromCurrency) => {
         if (!exchangeRates || fromCurrency === projectionDisplayCurrency) return amount;
         
         // First convert to base currency
@@ -54,9 +54,9 @@ export default function Charts() {
         if (projectionDisplayCurrency === settings.baseCurrency) return baseAmount;
         const displayRate = exchangeRates[projectionDisplayCurrency];
         return displayRate ? baseAmount * displayRate : baseAmount;
-    };
+    }, [exchangeRates, projectionDisplayCurrency, convertToBaseCurrency, settings.baseCurrency]);
 
-    const getTimeframePeriods = () => {
+    const getTimeframePeriods = useCallback(() => {
         switch (timeframe) {
             case '6M': return 6;
             case '1Y': return 12;
@@ -64,7 +64,7 @@ export default function Charts() {
             case '3Y': return 36;
             default: return 12;
         }
-    };
+    }, [timeframe]);
 
     // Get all unique categories from costs and income
     const allCategories = useMemo(() => {

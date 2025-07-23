@@ -81,7 +81,7 @@ export function BudgetProvider({ children }) {
         availableCurrencies: currencies
       });
     }
-  }, [settings.availableCurrencies, currencies]);
+  }, [settings.availableCurrencies, settings, setSettings]);
   const [currentCapital, setCurrentCapital] = useState(() => {
     if (typeof window === 'undefined') return 0;
     const saved = localStorage.getItem('currentCapital');

@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useBudget } from '@/context/BudgetContext';
-import { addWeeks, addMonths, addYears, format, isWithinInterval } from 'date-fns';
+import { addWeeks, addMonths, addYears, format } from 'date-fns';
 
 export default function ProjectionsTable() {
   const { 
