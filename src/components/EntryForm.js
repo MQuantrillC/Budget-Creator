@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useBudget } from '@/context/BudgetContext';
 import { Plus } from 'lucide-react';
+import DateInput from './DateInput';
 
 function FormSection({ title, children }) {
   return (
@@ -223,10 +224,11 @@ export default function EntryForm() {
         {frequency === 'one-time' && (
           <FormSection>
             <FormField label="Date" required>
-              <Input 
-                type="date" 
+              <DateInput 
                 value={date} 
-                onChange={(e) => setDate(e.target.value)} 
+                onChange={(e) => setDate(e.target.value)}
+                placeholder="DD/MM/YYYY"
+                required
               />
             </FormField>
           </FormSection>

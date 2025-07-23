@@ -90,7 +90,7 @@ export default function Charts() {
         const startingCapitalInDisplay = convertToDisplayCurrency(startingCapitalInBase, settings.baseCurrency);
         let runningCapital = startingCapitalInDisplay;
         
-        const sDate = new Date(startDate);
+        const sDate = new Date(startDate + 'T12:00:00'); // Parse as local time to avoid timezone issues
         const periods = getTimeframePeriods();
 
         return Array.from({ length: periods }).map((_, i) => {
@@ -104,7 +104,17 @@ export default function Charts() {
                 if (cost.category === 'biweekly') return acc + costAmount * 2.17; // Biweekly = 2.17 times per month
                 if (cost.category === 'semiannually') return acc + costAmount / 6; // Semiannually = 1/6 per month
                 if (cost.category === 'yearly') return acc + costAmount / 12;
-                if (cost.category === 'one-time' && cost.date && isWithinInterval(new Date(cost.date), interval)) return acc + costAmount;
+                if (cost.category === 'one-time' && cost.date && cost.date.trim() !== '') {
+                    const costDate = new Date(cost.date + 'T12:00:00'); // Add time to avoid timezone issues
+                    const intervalStart = new Date(interval.start);
+                    const intervalEnd = new Date(interval.end);
+                    
+                    // For one-time expenses, check if the date falls within the current period
+                    // Use explicit date comparison: date >= start AND date < end
+                    if (costDate >= intervalStart && costDate < intervalEnd) {
+                        return acc + costAmount;
+                    }
+                }
                 return acc;
             }, 0);
 
@@ -115,6 +125,17 @@ export default function Charts() {
                 if (inc.category === 'biweekly') return acc + incomeAmount * 2.17; // Biweekly = 2.17 times per month
                 if (inc.category === 'semiannually') return acc + incomeAmount / 6; // Semiannually = 1/6 per month
                 if (inc.category === 'yearly') return acc + incomeAmount / 12;
+                if (inc.category === 'one-time' && inc.date && inc.date.trim() !== '') {
+                    const incomeDate = new Date(inc.date + 'T12:00:00'); // Add time to avoid timezone issues
+                    const intervalStart = new Date(interval.start);
+                    const intervalEnd = new Date(interval.end);
+                    
+                    // For one-time income, check if the date falls within the current period
+                    // Use explicit date comparison: date >= start AND date < end
+                    if (incomeDate >= intervalStart && incomeDate < intervalEnd) {
+                        return acc + incomeAmount;
+                    }
+                }
                 return acc;
             }, 0);
 

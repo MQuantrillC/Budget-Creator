@@ -74,24 +74,27 @@ export default function ProjectionsTable() {
     const startingCapitalInDisplay = convertToDisplayCurrency(startingCapitalInBase, settings.baseCurrency);
     let runningCapital = startingCapitalInDisplay;
     
-    const sDate = new Date(startDate);
+    const sDate = new Date(startDate + 'T12:00:00'); // Parse as local time to avoid timezone issues
 
     for (let i = 0; i < periods; i++) {
-      let endDate;
+      let startDate, endDate;
       let periodLabel;
 
       if (periodType === 'weekly') {
+        startDate = addWeeks(sDate, i);
         endDate = addWeeks(sDate, i + 1);
-        periodLabel = `Week of ${format(addWeeks(sDate, i), 'MMM d, yyyy')}`;
+        periodLabel = `Week of ${format(startDate, 'MMM d, yyyy')}`;
       } else if (periodType === 'monthly') {
+        startDate = addMonths(sDate, i);
         endDate = addMonths(sDate, i + 1);
-        periodLabel = format(addMonths(sDate, i), 'MMMM yyyy');
+        periodLabel = format(startDate, 'MMMM yyyy');
       } else { // yearly
+        startDate = addYears(sDate, i);
         endDate = addYears(sDate, i + 1);
-        periodLabel = format(addYears(sDate, i), 'yyyy');
+        periodLabel = format(startDate, 'yyyy');
       }
 
-      const interval = { start: addMonths(sDate, i), end: endDate };
+      const interval = { start: startDate, end: endDate };
 
       let periodCosts = 0;
       filteredCosts.forEach(cost => {
@@ -102,7 +105,19 @@ export default function ProjectionsTable() {
           case 'biweekly': periodCosts += periodType === 'weekly' ? costAmount / 2 : (periodType === 'monthly' ? costAmount * 2.17 : costAmount * 26); break;
           case 'semiannually': periodCosts += periodType === 'monthly' ? costAmount / 6 : (periodType === 'weekly' ? costAmount / 26 : costAmount * 2); break;
           case 'yearly': periodCosts += periodType === 'yearly' ? costAmount : (periodType === 'monthly' ? costAmount / 12 : costAmount / 52); break;
-          case 'one-time': if (cost.date && isWithinInterval(new Date(cost.date), interval)) { periodCosts += costAmount; } break;
+          case 'one-time': 
+            if (cost.date && cost.date.trim() !== '') {
+              const costDate = new Date(cost.date + 'T12:00:00'); // Add time to avoid timezone issues
+              const intervalStart = new Date(interval.start);
+              const intervalEnd = new Date(interval.end);
+              
+              // For one-time expenses, check if the date falls within the current period
+              // Use explicit date comparison: date >= start AND date < end
+              if (costDate >= intervalStart && costDate < intervalEnd) {
+                periodCosts += costAmount;
+              }
+            }
+            break;
         }
       });
 
@@ -115,6 +130,19 @@ export default function ProjectionsTable() {
             case 'biweekly': periodIncome += periodType === 'weekly' ? incomeAmount / 2 : (periodType === 'monthly' ? incomeAmount * 2.17 : incomeAmount * 26); break;
             case 'semiannually': periodIncome += periodType === 'monthly' ? incomeAmount / 6 : (periodType === 'weekly' ? incomeAmount / 26 : incomeAmount * 2); break;
             case 'yearly': periodIncome += periodType === 'yearly' ? incomeAmount : (periodType === 'monthly' ? incomeAmount / 12 : incomeAmount / 52); break;
+            case 'one-time': 
+              if (inc.date && inc.date.trim() !== '') {
+                const incomeDate = new Date(inc.date + 'T12:00:00'); // Add time to avoid timezone issues
+                const intervalStart = new Date(interval.start);
+                const intervalEnd = new Date(interval.end);
+                
+                // For one-time income, check if the date falls within the current period
+                // Use explicit date comparison: date >= start AND date < end
+                if (incomeDate >= intervalStart && incomeDate < intervalEnd) {
+                  periodIncome += incomeAmount;
+                }
+              }
+              break;
         }
       });
       

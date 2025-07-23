@@ -2,6 +2,7 @@
 
 import { useBudget } from '@/context/BudgetContext';
 import { Calendar, Clock } from 'lucide-react';
+import DateInput from './DateInput';
 
 export default function FinancialProjectionControls() {
   const { 
@@ -28,11 +29,11 @@ export default function FinancialProjectionControls() {
             Start Date:
           </label>
         </div>
-        <input
+        <DateInput
           id="startDate"
-          type="date"
           value={startDate}
           onChange={(e) => setStartDate(e.target.value)}
+          placeholder="DD/MM/YYYY"
           className="px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 text-gray-900 dark:text-gray-100 transition-colors"
         />
       </div>
