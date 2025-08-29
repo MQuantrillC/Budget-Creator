@@ -61,6 +61,8 @@ export default function EntryForm() {
   const [currency, setCurrency] = useState(settings.baseCurrency);
   const [frequency, setFrequency] = useState('monthly');
   const [date, setDate] = useState('');
+  const [applyTax, setApplyTax] = useState(false);
+  const [taxPercentage, setTaxPercentage] = useState('');
 
   const convertedAmount = () => {
     if (!exchangeRates || !amount || currency === settings.baseCurrency) return null;
@@ -100,13 +102,25 @@ export default function EntryForm() {
   const handleSubmit = (e) => {
     e.preventDefault();
     const finalDescription = description === 'Add Custom Category' ? customDescription : description;
+    
+    // Calculate net amount for income with tax applied
+    let finalAmount = parseFloat(amount);
+    if (entryType === 'income' && applyTax && taxPercentage) {
+      const taxRate = parseFloat(taxPercentage) / 100;
+      finalAmount = finalAmount * (1 - taxRate);
+    }
+    
     const newEntry = {
       description: finalDescription,
-      amount: parseFloat(amount),
+      amount: finalAmount,
       currency,
       category: frequency,
       date: frequency === 'one-time' ? date : undefined,
       notes: optionalDescription.trim() || undefined, // Only include if not empty
+      ...(entryType === 'income' && applyTax && taxPercentage && {
+        grossAmount: parseFloat(amount),
+        taxPercentage: parseFloat(taxPercentage)
+      })
     };
 
     if (entryType === 'cost') addCost(newEntry);
@@ -120,6 +134,8 @@ export default function EntryForm() {
     setCurrency(settings.baseCurrency);
     setFrequency('monthly');
     setDate('');
+    setApplyTax(false);
+    setTaxPercentage('');
   };
 
   return (
@@ -219,6 +235,48 @@ export default function EntryForm() {
             </div>
           )}
         </FormSection>
+
+        {/* Tax Option for Income */}
+        {entryType === 'income' && (
+          <FormSection>
+            <div className="space-y-3">
+              <div className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  id="applyTax"
+                  checked={applyTax}
+                  onChange={(e) => setApplyTax(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                />
+                <label htmlFor="applyTax" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Apply Tax %
+                </label>
+              </div>
+              
+              {applyTax && (
+                <FormField label="Tax Percentage">
+                  <Input 
+                    type="number" 
+                    value={taxPercentage} 
+                    onChange={(e) => setTaxPercentage(e.target.value)} 
+                    placeholder="e.g., 20"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                  />
+                </FormField>
+              )}
+              
+              {applyTax && taxPercentage && amount && (
+                <div className="text-center">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2 inline-block">
+                    Net Income: {new Intl.NumberFormat('en-US', { style: 'currency', currency: currency }).format(parseFloat(amount) * (1 - parseFloat(taxPercentage) / 100))}
+                  </p>
+                </div>
+              )}
+            </div>
+          </FormSection>
+        )}
 
         {/* Date for One-time entries */}
         {frequency === 'one-time' && (

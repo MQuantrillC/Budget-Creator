@@ -8,6 +8,8 @@ import EntryForm from '@/components/EntryForm';
 import ClientOnly from '@/components/ClientOnly';
 import CurrentCapitalForm from '@/components/CurrentCapitalForm';
 import FinancialProjectionControls from '@/components/FinancialProjectionControls';
+import PercentageBreakdown from '@/components/PercentageBreakdown';
+import FinancialHealthGoals from '@/components/FinancialHealthGoals';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/Card';
 import { Wallet, TrendingUp, TrendingDown, Flame, Calculator, Target, X } from 'lucide-react';
 import ResetDataButton from '@/components/ResetDataButton';
@@ -198,6 +200,34 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-8">
             <h2 className="text-2xl font-bold text-gray-100 mb-3">Financial Overview</h2>
+            
+            {/* Income vs Expenses Progress Indicator */}
+            {totalMonthlyIncome > 0 && (
+              <div className="max-w-md mx-auto mb-6">
+                <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
+                  <p className="text-sm text-gray-400 mb-2">Monthly Spending vs Income</p>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-gray-300">
+                      You're spending {totalMonthlyCosts > 0 ? Math.round((totalMonthlyCosts / totalMonthlyIncome) * 100) : 0}% of your income
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-700 rounded-full h-3">
+                    <div 
+                      className={`h-3 rounded-full transition-all duration-300 ${
+                        (totalMonthlyCosts / totalMonthlyIncome) <= 0.5 ? 'bg-green-500' :
+                        (totalMonthlyCosts / totalMonthlyIncome) <= 0.8 ? 'bg-yellow-500' : 'bg-red-500'
+                      }`}
+                      style={{ width: `${Math.min((totalMonthlyCosts / totalMonthlyIncome) * 100, 100)}%` }}
+                    ></div>
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-400 mt-1">
+                    <span>0%</span>
+                    <span>100%</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div className="flex justify-center items-center space-x-2 mt-2">
               <p className="text-sm text-gray-400">Display Currency:</p>
               <select
@@ -264,7 +294,7 @@ export default function HomePage() {
                   Expenses
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-6">
                 <div className="space-y-3">
                   {costs.length > 0 ? costs.map((cost) => (
                     <div key={cost.id} className="flex justify-between items-start p-3 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-100 dark:border-gray-600 hover:shadow-sm transition-shadow group">
@@ -309,7 +339,7 @@ export default function HomePage() {
                   Income
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-6">
                 <div className="space-y-3">
                   {income.length > 0 ? income.map((inc) => (
                     <div key={inc.id} className="flex justify-between items-start p-3 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-100 dark:border-gray-600 hover:shadow-sm transition-shadow group">
@@ -349,6 +379,16 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+      
+      {/* Percentage Breakdown Section */}
+      <ClientOnly>
+        <PercentageBreakdown />
+      </ClientOnly>
+      
+      {/* Financial Health & Goals Section */}
+      <ClientOnly>
+        <FinancialHealthGoals />
+      </ClientOnly>
       
       {/* Charts Section */}
       <div className="py-16 px-4 bg-white dark:bg-gray-900">

@@ -59,6 +59,14 @@ const initialDummyData = {
   startingCapitalCurrency: 'EUR',
   projectionDisplayCurrency: 'EUR',
   timeframe: '1Y', // 6M, 1Y, 2Y, 3Y
+  savingsGoal: {
+    amount: 0,
+    targetDate: '',
+    currency: 'EUR',
+    goalType: 'objective', // 'objective', 'monthly', 'yearly'
+    includeCurrentCapital: true,
+    enabled: false
+  }
 };
 
 export function BudgetProvider({ children }) {
@@ -68,6 +76,7 @@ export function BudgetProvider({ children }) {
   const [startingCapitalCurrency, setStartingCapitalCurrency] = usePersistentState('startingCapitalCurrency', initialDummyData.startingCapitalCurrency);
   const [projectionDisplayCurrency, setProjectionDisplayCurrency] = usePersistentState('projectionDisplayCurrency', initialDummyData.projectionDisplayCurrency);
   const [timeframe, setTimeframe] = usePersistentState('timeframe', initialDummyData.timeframe);
+  const [savingsGoal, setSavingsGoal] = usePersistentState('savingsGoal', initialDummyData.savingsGoal);
   
   // Update available currencies if they've changed (e.g., PEN was removed)
   useEffect(() => {
@@ -126,6 +135,7 @@ export function BudgetProvider({ children }) {
     setCosts([]);
     setIncome([]);
     setCurrentCapital(0);
+    setSavingsGoal(initialDummyData.savingsGoal);
     // Also reset settings to ensure currencies are updated
     setSettings(initialDummyData.settings);
   };
@@ -156,6 +166,8 @@ export function BudgetProvider({ children }) {
     setProjectionDisplayCurrency,
     timeframe,
     setTimeframe,
+    savingsGoal,
+    setSavingsGoal,
     addCost,
     addIncome,
     deleteCost,
