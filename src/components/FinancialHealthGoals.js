@@ -103,7 +103,7 @@ export default function FinancialHealthGoals() {
         if (monthlyNetIncome >= goalAmountInBase) {
           return { 
             type: 'success', 
-            message: `Great! You're already saving ${new Intl.NumberFormat('en-US', { style: 'currency', currency: goalCurrency }).format(savingsGoal.amount)} monthly.` 
+            message: `Great! You&apos;re already saving ${new Intl.NumberFormat('en-US', { style: 'currency', currency: goalCurrency }).format(savingsGoal.amount)} monthly.` 
           };
         } else {
           const shortfall = goalAmountInBase - monthlyNetIncome;
@@ -118,7 +118,7 @@ export default function FinancialHealthGoals() {
         if (annualNetIncome >= goalAmountInBase) {
           return { 
             type: 'success', 
-            message: `Excellent! You're on track to save ${new Intl.NumberFormat('en-US', { style: 'currency', currency: goalCurrency }).format(savingsGoal.amount)} this year.` 
+            message: `Excellent! You&apos;re on track to save ${new Intl.NumberFormat('en-US', { style: 'currency', currency: goalCurrency }).format(savingsGoal.amount)} this year.` 
           };
         } else {
           const shortfall = goalAmountInBase - annualNetIncome;
@@ -138,14 +138,14 @@ export default function FinancialHealthGoals() {
         
         const startingPoint = savingsGoal.includeCurrentCapital ? currentCapitalInBase : 0;
         const remainingAmount = goalAmountInBase - startingPoint;
-        if (remainingAmount <= 0) return { type: 'success', message: 'Congratulations! You\'ve already reached your objective!' };
+        if (remainingAmount <= 0) return { type: 'success', message: 'Congratulations! You&apos;ve already reached your objective!' };
 
         const neededMonthlySavings = remainingAmount / monthsAvailable;
         
         if (monthlyNetIncome >= neededMonthlySavings) {
           return { 
             type: 'success', 
-            message: `You're on track! Save ${new Intl.NumberFormat('en-US', { style: 'currency', currency: settings.baseCurrency }).format(neededMonthlySavings)} monthly to reach your objective.` 
+            message: `You&apos;re on track! Save ${new Intl.NumberFormat('en-US', { style: 'currency', currency: settings.baseCurrency }).format(neededMonthlySavings)} monthly to reach your objective.` 
           };
         } else {
           const shortfall = neededMonthlySavings - monthlyNetIncome;
@@ -390,7 +390,7 @@ export default function FinancialHealthGoals() {
                       {(goalType === 'monthly' || goalType === 'yearly') && monthsToGoal === 0 && (
                         <div className="flex items-center text-sm text-green-600 dark:text-green-400">
                           <CheckCircle className="h-4 w-4 mr-1" />
-                          <span>Goal achieved! You're meeting your {goalType} savings target.</span>
+                          <span>Goal achieved! You&apos;re meeting your {goalType} savings target.</span>
                         </div>
                       )}
                     </div>

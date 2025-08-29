@@ -208,7 +208,7 @@ export default function HomePage() {
                   <p className="text-sm text-gray-400 mb-2">Monthly Spending vs Income</p>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-gray-300">
-                      You're spending {totalMonthlyCosts > 0 ? Math.round((totalMonthlyCosts / totalMonthlyIncome) * 100) : 0}% of your income
+                      You&apos;re spending {totalMonthlyCosts > 0 ? Math.round((totalMonthlyCosts / totalMonthlyIncome) * 100) : 0}% of your income
                     </span>
                   </div>
                   <div className="w-full bg-gray-700 rounded-full h-3">
