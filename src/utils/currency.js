@@ -75,7 +75,7 @@ export async function getLatestRates(base = 'EUR') {
       }
     } catch (penError) {
       // Silently continue without PEN - this is optional functionality
-      console.warn("PEN integration failed, continuing without it");
+      console.warn("PEN integration failed, continuing without it:", penError.message);
     }
 
     return rates;
