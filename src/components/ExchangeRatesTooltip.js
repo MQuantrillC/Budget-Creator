@@ -29,8 +29,8 @@ export default function ExchangeRatesTooltip() {
   }
 
   // Get the most common currencies to display (excluding base currency)
-  // Note: PEN (Peruvian Sol) is not supported by Frankfurter API
-  const commonCurrencies = ['USD', 'EUR', 'GBP', 'CHF', 'CAD', 'AUD', 'JPY', 'CNY', 'BRL'];
+  // Note: PEN (Peruvian Sol) is fetched from Open Exchange Rates API
+  const commonCurrencies = ['USD', 'EUR', 'GBP', 'CHF', 'CAD', 'AUD', 'JPY', 'CNY', 'BRL', 'PEN'];
   
   const displayRates = commonCurrencies
     .filter(code => code !== settings.baseCurrency && exchangeRates[code])
@@ -93,7 +93,7 @@ export default function ExchangeRatesTooltip() {
             
             <div className="mt-3 pt-3 border-t border-gray-600">
               <div className="text-xs text-gray-400">
-                Rates from Frankfurter API
+                Rates from Frankfurter API & Open Exchange Rates
               </div>
             </div>
           </div>
