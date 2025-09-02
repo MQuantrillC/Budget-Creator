@@ -3,6 +3,8 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { getLatestRates } from '@/utils/currency';
 import { currencies } from '@/utils/currencies';
+import { saveUserBudgetData, loadUserBudgetData } from '@/lib/supabaseDatabase';
+import { useAuth } from '@/components/AuthProvider';
 
 // Custom hook for persisting state to local storage
 function usePersistentState(key, defaultValue) {
@@ -71,6 +73,8 @@ const initialDummyData = {
 };
 
 export function BudgetProvider({ children }) {
+  const { session, isGuest } = useAuth();
+  
   const [costs, setCosts] = usePersistentState('costs', initialDummyData.costs);
   const [income, setIncome] = usePersistentState('income', initialDummyData.income);
   const [loans, setLoans] = usePersistentState('loans', initialDummyData.loans);
@@ -79,6 +83,8 @@ export function BudgetProvider({ children }) {
   const [projectionDisplayCurrency, setProjectionDisplayCurrency] = usePersistentState('projectionDisplayCurrency', initialDummyData.projectionDisplayCurrency);
   const [timeframe, setTimeframe] = usePersistentState('timeframe', initialDummyData.timeframe);
   const [savingsGoal, setSavingsGoal] = usePersistentState('savingsGoal', initialDummyData.savingsGoal);
+  
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
   
   // Update available currencies if they've changed (e.g., PEN was removed)
   useEffect(() => {
@@ -112,6 +118,61 @@ export function BudgetProvider({ children }) {
     }
     fetchRates();
   }, [settings.baseCurrency]);
+
+  // Load user data when they log in
+  useEffect(() => {
+    async function loadUserData() {
+      if (session?.user?.id && !isDataLoaded) {
+        const { data, error } = await loadUserBudgetData(session.user.id);
+        
+        if (!error && data) {
+          // Load user's saved data
+          if (data.costs) setCosts(data.costs);
+          if (data.income) setIncome(data.income);
+          if (data.loans) setLoans(data.loans);
+          if (data.settings) setSettings(data.settings);
+          if (data.currentCapital !== undefined) setCurrentCapital(data.currentCapital);
+          if (data.startDate) setStartDate(data.startDate);
+          if (data.startingCapitalCurrency) setStartingCapitalCurrency(data.startingCapitalCurrency);
+          if (data.projectionDisplayCurrency) setProjectionDisplayCurrency(data.projectionDisplayCurrency);
+          if (data.timeframe) setTimeframe(data.timeframe);
+          if (data.savingsGoal) setSavingsGoal(data.savingsGoal);
+        }
+        setIsDataLoaded(true);
+      } else if (isGuest || !session) {
+        // For guests, just mark as loaded (use local storage)
+        setIsDataLoaded(true);
+      }
+    }
+
+    loadUserData();
+  }, [session, isGuest, isDataLoaded]);
+
+  // Save user data when it changes (for authenticated users only)
+  useEffect(() => {
+    async function saveUserData() {
+      if (session?.user?.id && isDataLoaded) {
+        const budgetData = {
+          costs,
+          income,
+          loans,
+          settings,
+          currentCapital,
+          startDate,
+          startingCapitalCurrency,
+          projectionDisplayCurrency,
+          timeframe,
+          savingsGoal
+        };
+
+        await saveUserBudgetData(session.user.id, budgetData);
+      }
+    }
+
+    // Debounce saves to avoid too many database calls
+    const timeoutId = setTimeout(saveUserData, 1000);
+    return () => clearTimeout(timeoutId);
+  }, [session, costs, income, loans, settings, currentCapital, startDate, startingCapitalCurrency, projectionDisplayCurrency, timeframe, savingsGoal, isDataLoaded]);
 
   const addCost = (cost) => {
     setCosts([...costs, { ...cost, id: Date.now() }]);
