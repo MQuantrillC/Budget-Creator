@@ -116,78 +116,67 @@ export function BudgetProvider({ children }) {
     fetchRates();
   }, [settings.baseCurrency]);
 
-  // Load user data when they log in or clear data when they log out
+  // Detect user changes and clear data
+  useEffect(() => {
+    const newUserId = session?.user?.id || null;
+    
+    console.log('🔍 USER CHANGE CHECK:');
+    console.log('  Current User ID:', currentUserId);
+    console.log('  New User ID:', newUserId);
+    
+    if (currentUserId !== newUserId) {
+      console.log('👤 USER CHANGED:', currentUserId, '->', newUserId);
+      
+      // Clear previous user's data first
+      console.log('🧹 Clearing previous user data...');
+      setCosts(initialDummyData.costs);
+      setIncome(initialDummyData.income);
+      setLoans(initialDummyData.loans);
+      setSettings(initialDummyData.settings);
+      setCurrentCapital(initialDummyData.currentCapital);
+      setStartDate(initialDummyData.startDate);
+      setStartingCapitalCurrency(initialDummyData.startingCapitalCurrency);
+      setProjectionDisplayCurrency(initialDummyData.projectionDisplayCurrency);
+      setTimeframe(initialDummyData.timeframe);
+      setSavingsGoal(initialDummyData.savingsGoal);
+      
+      setCurrentUserId(newUserId);
+      setIsDataLoaded(false);
+    }
+  }, [session?.user?.id, currentUserId]);
+
+  // Load user data when needed
   useEffect(() => {
     async function loadUserData() {
       console.log('💾 BUDGET DATA LOADING:');
       console.log('  Session:', session ? `${session.user.email} (${session.user.id})` : 'None');
-      console.log('  Current User ID:', currentUserId);
       console.log('  Is Guest:', isGuest);
       console.log('  Data Loaded:', isDataLoaded);
       
-      // Check if user has changed
-      const newUserId = session?.user?.id || null;
-      if (currentUserId !== newUserId) {
-        console.log('👤 USER CHANGED:', currentUserId, '->', newUserId);
+      if (session?.user?.id && !isDataLoaded) {
+        console.log('📥 Loading Supabase data for authenticated user:', session.user.id);
+        const { data, error } = await loadUserBudgetData();
         
-        // Clear previous user's data first
-        console.log('🧹 Clearing previous user data...');
-        setCosts(initialDummyData.costs);
-        setIncome(initialDummyData.income);
-        setLoans(initialDummyData.loans);
-        setSettings(initialDummyData.settings);
-        setCurrentCapital(initialDummyData.currentCapital);
-        setStartDate(initialDummyData.startDate);
-        setStartingCapitalCurrency(initialDummyData.startingCapitalCurrency);
-        setProjectionDisplayCurrency(initialDummyData.projectionDisplayCurrency);
-        setTimeframe(initialDummyData.timeframe);
-        setSavingsGoal(initialDummyData.savingsGoal);
-        
-        setCurrentUserId(newUserId);
-        setIsDataLoaded(false);
-      }
-      
-      if (session?.user?.id) {
-        if (!isDataLoaded) {
-          console.log('📥 Loading Supabase data for authenticated user:', session.user.id);
-          const { data, error } = await loadUserBudgetData();
-          
-          if (error) {
-            console.error('❌ Failed to load user data:', error);
-          } else if (data) {
-            console.log('✅ User data loaded from Supabase:', Object.keys(data));
-            // Load user's saved data
-            if (data.costs) setCosts(data.costs);
-            if (data.income) setIncome(data.income);
-            if (data.loans) setLoans(data.loans);
-            if (data.settings) setSettings(data.settings);
-            if (data.currentCapital !== undefined) setCurrentCapital(data.currentCapital);
-            if (data.startDate) setStartDate(data.startDate);
-            if (data.startingCapitalCurrency) setStartingCapitalCurrency(data.startingCapitalCurrency);
-            if (data.projectionDisplayCurrency) setProjectionDisplayCurrency(data.projectionDisplayCurrency);
-            if (data.timeframe) setTimeframe(data.timeframe);
-            if (data.savingsGoal) setSavingsGoal(data.savingsGoal);
-          } else {
-            console.log('ℹ️ No existing data found for user - starting fresh');
-          }
-          setIsDataLoaded(true);
+        if (error) {
+          console.error('❌ Failed to load user data:', error);
+        } else if (data) {
+          console.log('✅ User data loaded from Supabase:', Object.keys(data));
+          // Load user's saved data
+          if (data.costs) setCosts(data.costs);
+          if (data.income) setIncome(data.income);
+          if (data.loans) setLoans(data.loans);
+          if (data.settings) setSettings(data.settings);
+          if (data.currentCapital !== undefined) setCurrentCapital(data.currentCapital);
+          if (data.startDate) setStartDate(data.startDate);
+          if (data.startingCapitalCurrency) setStartingCapitalCurrency(data.startingCapitalCurrency);
+          if (data.projectionDisplayCurrency) setProjectionDisplayCurrency(data.projectionDisplayCurrency);
+          if (data.timeframe) setTimeframe(data.timeframe);
+          if (data.savingsGoal) setSavingsGoal(data.savingsGoal);
+        } else {
+          console.log('ℹ️ No existing data found for user - starting fresh');
         }
-      } else if (!session) {
-        // User logged out - clear data and reset
-        console.log('🧹 User logged out - resetting to default data');
-        setCosts(initialDummyData.costs);
-        setIncome(initialDummyData.income);
-        setLoans(initialDummyData.loans);
-        setSettings(initialDummyData.settings);
-        setCurrentCapital(initialDummyData.currentCapital);
-        setStartDate(initialDummyData.startDate);
-        setStartingCapitalCurrency(initialDummyData.startingCapitalCurrency);
-        setProjectionDisplayCurrency(initialDummyData.projectionDisplayCurrency);
-        setTimeframe(initialDummyData.timeframe);
-        setSavingsGoal(initialDummyData.savingsGoal);
-        setCurrentUserId(null);
-        setIsDataLoaded(false); // Reset to allow loading new user's data
-      } else if (isGuest) {
+        setIsDataLoaded(true);
+      } else if (isGuest && !isDataLoaded) {
         // Guest mode
         console.log('👤 Guest mode - using local storage');
         setIsDataLoaded(true);
@@ -195,7 +184,7 @@ export function BudgetProvider({ children }) {
     }
 
     loadUserData();
-  }, [session, isGuest, isDataLoaded, currentUserId]);
+  }, [session, isGuest, isDataLoaded]);
 
 
 
