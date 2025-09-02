@@ -146,7 +146,7 @@ export function BudgetProvider({ children }) {
     }
 
     loadUserData();
-  }, [session, isGuest, isDataLoaded]);
+  }, [session, isGuest, isDataLoaded, setCosts, setIncome, setLoans, setSettings, setStartingCapitalCurrency, setProjectionDisplayCurrency, setTimeframe, setSavingsGoal]);
 
   // Save user data when it changes (for authenticated users only)
   useEffect(() => {
