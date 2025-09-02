@@ -1,6 +1,7 @@
 'use client';
 
 import { useBudget } from '@/context/BudgetContext';
+import { useAuth } from '@/components/AuthProvider';
 import ProjectionsTable from '@/components/ProjectionsTable';
 import Charts from '@/components/Charts';
 import Tooltip from '@/components/Tooltip';
@@ -66,6 +67,8 @@ export default function HomePage() {
     deleteCost,
     deleteIncome 
   } = useBudget();
+  
+  const { session, isGuest, isLoading: authLoading, signOut, showAuthModal } = useAuth();
 
   const convertToBaseCurrency = (amount, currency) => {
     if (!exchangeRates || currency === settings.baseCurrency) {
@@ -123,22 +126,67 @@ export default function HomePage() {
     }
   };
 
-  if (!exchangeRates) {
+  // Show loading only if auth is still loading or if we have auth but no exchange rates
+  if (authLoading || (!authLoading && (session || isGuest) && !exchangeRates)) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
-          <div className="text-gray-400 text-lg">Loading financial data...</div>
+          <div className="text-gray-400 text-lg">
+            {authLoading ? 'Loading...' : 'Loading financial data...'}
+          </div>
         </div>
       </div>
     );
+  }
+
+  // If auth is done but no session and not guest, let AuthModal show (return empty content)
+  if (!authLoading && !session && !isGuest) {
+    return <div className="min-h-screen bg-gray-900"></div>;
   }
 
   return (
     <div className="min-h-screen bg-gray-900">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-gray-900/80 backdrop-blur-sm border-b border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-end">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+          {/* Auth Buttons */}
+          <div className="flex items-center space-x-3">
+            {(isGuest || (!session && !authLoading)) && (
+              <>
+                <button
+                  onClick={showAuthModal}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                >
+                  Log In
+                </button>
+                <button
+                  onClick={showAuthModal}
+                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                >
+                  Sign Up
+                </button>
+              </>
+            )}
+            {session && (
+              <div className="flex items-center space-x-3">
+                <span className="text-sm text-gray-300">
+                  Welcome, {session.user.user_metadata?.first_name || session.user.email.split('@')[0]}!
+                </span>
+                <button
+                  onClick={signOut}
+                  className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white text-xs font-medium rounded-md transition-colors"
+                >
+                  Sign Out
+                </button>
+              </div>
+            )}
+            {isGuest && (
+              <span className="text-sm text-gray-400">Guest Mode</span>
+            )}
+          </div>
+          
+          {/* Exchange Rates */}
           <ExchangeRatesTooltip />
         </div>
       </div>

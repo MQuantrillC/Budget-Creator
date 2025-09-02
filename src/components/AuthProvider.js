@@ -60,6 +60,11 @@ export default function AuthProvider({ children }) {
     setShowModal(false);
   };
 
+  const showAuthModal = () => {
+    setShowModal(true);
+    setIsGuest(false);
+  };
+
   const signOut = async () => {
     if (supabase) {
       await supabase.auth.signOut();
@@ -73,6 +78,7 @@ export default function AuthProvider({ children }) {
     isGuest,
     isLoading,
     signOut,
+    showAuthModal,
   };
 
   // Don't render anything while loading initial session
