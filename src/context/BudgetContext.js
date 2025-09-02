@@ -167,7 +167,18 @@ export function BudgetProvider({ children }) {
     }
 
     loadUserData();
-  }, [session, isGuest, isDataLoaded]);
+  }, [session, isGuest, isDataLoaded, setCosts, setIncome, setLoans, setSettings, setStartingCapitalCurrency, setProjectionDisplayCurrency, setTimeframe, setSavingsGoal]);
+
+  // Trigger data loading when session changes (login/logout)
+  useEffect(() => {
+    if (session?.user?.id) {
+      console.log('🔄 SESSION CHANGED - User logged in:', session.user.email, session.user.id);
+      setIsDataLoaded(false); // Force reload of user data
+    } else if (!session && !isGuest) {
+      console.log('🔄 SESSION CHANGED - User logged out');
+      setIsDataLoaded(false); // Force data clearing
+    }
+  }, [session?.user?.id]);
 
   // Save user data when it changes (for authenticated users only)
   useEffect(() => {
