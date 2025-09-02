@@ -3,6 +3,7 @@ import './globals.css';
 import { BudgetProvider } from '@/context/BudgetContext';
 import { Toaster } from 'react-hot-toast';
 import Footer from '@/components/Footer';
+import AuthProvider from '@/components/AuthProvider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -33,15 +34,17 @@ export default function RootLayout({ children }) {
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
       </head>
       <body className={`${inter.className} font-sans transition-colors duration-200`}>
-        <BudgetProvider>
-          <div className="flex flex-col min-h-screen">
-            <main className="flex-grow">
-              {children}
-            </main>
-            <Footer />
-            <Toaster position="bottom-right" />
-          </div>
-        </BudgetProvider>
+        <AuthProvider>
+          <BudgetProvider>
+            <div className="flex flex-col min-h-screen">
+              <main className="flex-grow">
+                {children}
+              </main>
+              <Footer />
+              <Toaster position="bottom-right" />
+            </div>
+          </BudgetProvider>
+        </AuthProvider>
       </body>
     </html>
   );
