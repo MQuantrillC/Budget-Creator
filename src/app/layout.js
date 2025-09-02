@@ -35,8 +35,8 @@ export default function RootLayout({ children }) {
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
       </head>
       <body className={`${inter.className} font-sans transition-colors duration-200`}>
-        <BudgetProvider>
-          <AuthProvider>
+        <AuthProvider>
+          <BudgetProvider>
             <AuthGuard>
               <div className="flex flex-col min-h-screen">
                 <main className="flex-grow">
@@ -46,8 +46,8 @@ export default function RootLayout({ children }) {
                 <Toaster position="bottom-right" />
               </div>
             </AuthGuard>
-          </AuthProvider>
-        </BudgetProvider>
+          </BudgetProvider>
+        </AuthProvider>
       </body>
     </html>
   );
