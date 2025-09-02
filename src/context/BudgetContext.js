@@ -119,11 +119,12 @@ export function BudgetProvider({ children }) {
     fetchRates();
   }, [settings.baseCurrency]);
 
-  // Load user data when they log in
+  // Load user data when they log in or clear data when they log out
   useEffect(() => {
     async function loadUserData() {
       if (session?.user?.id && !isDataLoaded) {
-        const { data, error } = await loadUserBudgetData(session.user.id);
+        console.log('Loading data for authenticated user:', session.user.id);
+        const { data, error } = await loadUserBudgetData();
         
         if (!error && data) {
           // Load user's saved data
@@ -140,9 +141,21 @@ export function BudgetProvider({ children }) {
         }
         setIsDataLoaded(true);
       } else if (isGuest || !session) {
-        // For guests, just mark as loaded (use local storage)
+        // For guests or when logged out, clear user data and use local storage
+        console.log('User logged out or in guest mode - clearing data');
         setIsDataLoaded(true);
       }
+    }
+
+    // Clear data when user logs out
+    if (!session && isDataLoaded) {
+      console.log('User logged out - resetting to default data');
+      setCosts([]);
+      setIncome([]);
+      setLoans([]);
+      setCurrentCapital(0);
+      setStartDate(new Date().toISOString().split('T')[0]);
+      setIsDataLoaded(false); // Reset to allow loading new user's data
     }
 
     loadUserData();
@@ -165,7 +178,10 @@ export function BudgetProvider({ children }) {
           savingsGoal
         };
 
-        await saveUserBudgetData(session.user.id, budgetData);
+        const { error } = await saveUserBudgetData(budgetData);
+        if (error) {
+          console.error('Failed to save budget data:', error);
+        }
       }
     }
 
