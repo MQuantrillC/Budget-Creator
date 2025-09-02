@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import AuthModal from './AuthModal';
+import ClientOnly from './ClientOnly';
 
 const AuthContext = createContext({});
 
@@ -29,26 +30,55 @@ export default function AuthProvider({ children }) {
       return;
     }
 
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session) {
-        setShowModal(false);
-      }
-      setIsLoading(false);
-    });
+    // Only run on client side
+    if (typeof window === 'undefined') {
+      return;
+    }
 
-    // Listen for auth changes
+    // Get initial session with error handling
+    const initializeAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('Error getting session:', error);
+          setIsGuest(true);
+          setShowModal(false);
+        } else {
+          setSession(session);
+          if (session) {
+            setShowModal(false);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to initialize auth:', err);
+        setIsGuest(true);
+        setShowModal(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeAuth();
+
+    // Listen for auth changes with error handling
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session) {
-        setShowModal(false);
+      try {
+        setSession(session);
+        if (session) {
+          setShowModal(false);
+        }
+      } catch (err) {
+        console.error('Auth state change error:', err);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      if (subscription) {
+        subscription.unsubscribe();
+      }
+    };
   }, []);
 
   const handleCloseModal = () => {
@@ -95,9 +125,11 @@ export default function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={value}>
-      {showModal && !isGuest && !session && (
-        <AuthModal onClose={handleCloseModal} onGuest={handleGuestMode} />
-      )}
+      <ClientOnly>
+        {showModal && !isGuest && !session && (
+          <AuthModal onClose={handleCloseModal} onGuest={handleGuestMode} />
+        )}
+      </ClientOnly>
       {children}
     </AuthContext.Provider>
   );

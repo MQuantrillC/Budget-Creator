@@ -102,21 +102,43 @@ export default function AuthModal({ onClose, onGuest }) {
       return;
     }
 
+    // Check if we're in the browser
+    if (typeof window === 'undefined') {
+      setError('Google authentication is not available on server');
+      return;
+    }
+
     setIsLoading(true);
     setError('');
     
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}`
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
+        }
+      });
+      
+      if (error) {
+        console.error('Google OAuth error:', error);
+        setError(error.message);
+        setIsLoading(false);
+      } else if (data?.url) {
+        // Redirect to Google OAuth
+        window.location.href = data.url;
+      } else {
+        setError('Failed to get Google authentication URL');
+        setIsLoading(false);
       }
-    });
-    
-    if (error) {
-      setError(error.message);
+    } catch (err) {
+      console.error('Google OAuth exception:', err);
+      setError('Failed to initiate Google authentication');
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   }
 
   const resetForm = () => {
