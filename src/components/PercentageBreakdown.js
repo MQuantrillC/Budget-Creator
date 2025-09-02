@@ -3,9 +3,10 @@
 import { useBudget } from '@/context/BudgetContext';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/Card';
 import { TrendingDown, TrendingUp, PieChart } from 'lucide-react';
+import { getLoanMonthlyPayment } from '@/utils/loanCalculations';
 
 export default function PercentageBreakdown() {
-  const { costs, income, settings, exchangeRates } = useBudget();
+  const { costs, income, loans, settings, exchangeRates } = useBudget();
 
   const convertToBaseCurrency = (amount, currency) => {
     if (!exchangeRates || currency === settings.baseCurrency) {
@@ -35,17 +36,32 @@ export default function PercentageBreakdown() {
     yearlyAmount: calculateYearlyAmount(cost)
   }));
 
+  // Add loan payments as expenses
+  const loanExpenses = loans.map(loan => {
+    const monthlyPayment = getLoanMonthlyPayment(loan);
+    const yearlyAmount = convertToBaseCurrency(monthlyPayment * 12, loan.currency);
+    return {
+      id: `loan-${loan.id}`,
+      description: `${loan.name} (Loan Payment)`,
+      category: 'loan',
+      yearlyAmount,
+      currency: loan.currency
+    };
+  });
+
+  const allExpensesWithYearlyAmounts = [...expensesWithYearlyAmounts, ...loanExpenses];
+
   const incomeWithYearlyAmounts = income.map(inc => ({
     ...inc,
     yearlyAmount: calculateYearlyAmount(inc)
   }));
 
   // Calculate totals
-  const totalYearlyExpenses = expensesWithYearlyAmounts.reduce((sum, expense) => sum + expense.yearlyAmount, 0);
+  const totalYearlyExpenses = allExpensesWithYearlyAmounts.reduce((sum, expense) => sum + expense.yearlyAmount, 0);
   const totalYearlyIncome = incomeWithYearlyAmounts.reduce((sum, inc) => sum + inc.yearlyAmount, 0);
 
   // Calculate percentages and sort by amount (descending)
-  const expensePercentages = expensesWithYearlyAmounts
+  const expensePercentages = allExpensesWithYearlyAmounts
     .map(expense => ({
       ...expense,
       percentage: totalYearlyExpenses > 0 ? (expense.yearlyAmount / totalYearlyExpenses) * 100 : 0

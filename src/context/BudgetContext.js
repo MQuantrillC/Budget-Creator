@@ -50,6 +50,7 @@ export function useBudget() {
 const initialDummyData = {
   costs: [],
   income: [],
+  loans: [],
   settings: {
     baseCurrency: 'EUR',
     availableCurrencies: currencies,
@@ -72,6 +73,7 @@ const initialDummyData = {
 export function BudgetProvider({ children }) {
   const [costs, setCosts] = usePersistentState('costs', initialDummyData.costs);
   const [income, setIncome] = usePersistentState('income', initialDummyData.income);
+  const [loans, setLoans] = usePersistentState('loans', initialDummyData.loans);
   const [settings, setSettings] = usePersistentState('settings', initialDummyData.settings);
   const [startingCapitalCurrency, setStartingCapitalCurrency] = usePersistentState('startingCapitalCurrency', initialDummyData.startingCapitalCurrency);
   const [projectionDisplayCurrency, setProjectionDisplayCurrency] = usePersistentState('projectionDisplayCurrency', initialDummyData.projectionDisplayCurrency);
@@ -119,12 +121,20 @@ export function BudgetProvider({ children }) {
     setIncome([...income, { ...inc, id: Date.now() }]);
   };
 
+  const addLoan = (loan) => {
+    setLoans([...loans, { ...loan, id: Date.now() }]);
+  };
+
   const deleteCost = (id) => {
     setCosts(costs.filter(cost => cost.id !== id));
   };
 
   const deleteIncome = (id) => {
     setIncome(income.filter(inc => inc.id !== id));
+  };
+
+  const deleteLoan = (id) => {
+    setLoans(loans.filter(loan => loan.id !== id));
   };
 
   const setCapital = (amount) => {
@@ -134,6 +144,7 @@ export function BudgetProvider({ children }) {
   const resetAllData = () => {
     setCosts([]);
     setIncome([]);
+    setLoans([]);
     setCurrentCapital(0);
     setSavingsGoal(initialDummyData.savingsGoal);
     // Also reset settings to ensure currencies are updated
@@ -143,17 +154,20 @@ export function BudgetProvider({ children }) {
   useEffect(() => {
     localStorage.setItem('costs', JSON.stringify(costs));
     localStorage.setItem('income', JSON.stringify(income));
+    localStorage.setItem('loans', JSON.stringify(loans));
     localStorage.setItem('settings', JSON.stringify(settings));
     localStorage.setItem('currentCapital', JSON.stringify(currentCapital));
     localStorage.setItem('startDate', JSON.stringify(startDate));
     localStorage.setItem('timeframe', JSON.stringify(timeframe));
-  }, [costs, income, settings, currentCapital, startDate, timeframe]);
+  }, [costs, income, loans, settings, currentCapital, startDate, timeframe]);
 
   const value = {
     costs,
     setCosts,
     income,
     setIncome,
+    loans,
+    setLoans,
     settings,
     setSettings,
     currentCapital,
@@ -170,8 +184,10 @@ export function BudgetProvider({ children }) {
     setSavingsGoal,
     addCost,
     addIncome,
+    addLoan,
     deleteCost,
     deleteIncome,
+    deleteLoan,
     exchangeRates,
     setCapital,
     resetAllData,

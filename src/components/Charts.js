@@ -4,6 +4,7 @@ import { useMemo, useState, useCallback } from 'react';
 import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Line, BarChart, Bar } from 'recharts';
 import { useBudget } from '@/context/BudgetContext';
 import { addMonths, format } from 'date-fns';
+import { getLoanMonthlyPayment } from '@/utils/loanCalculations';
 
 const CustomTooltip = ({ active, payload, label, currency }) => {
     if (active && payload && payload.length) {
@@ -26,6 +27,7 @@ export default function Charts() {
     const { 
         costs, 
         income, 
+        loans,
         currentCapital, 
         settings, 
         exchangeRates, 
@@ -118,6 +120,22 @@ export default function Charts() {
                 return acc;
             }, 0);
 
+            // Add loan payments to monthly costs
+            const monthlyLoanPayments = loans.reduce((acc, loan) => {
+                const loanStartDate = new Date(loan.startDate + 'T12:00:00');
+                const intervalEnd = new Date(interval.end);
+                
+                // Check if loan is active during this period
+                if (loanStartDate < intervalEnd) {
+                    const monthlyPayment = getLoanMonthlyPayment(loan);
+                    const loanPaymentInDisplay = convertToDisplayCurrency(monthlyPayment, loan.currency);
+                    return acc + loanPaymentInDisplay;
+                }
+                return acc;
+            }, 0);
+
+            monthlyCosts += monthlyLoanPayments;
+
             let monthlyIncome = filteredIncome.reduce((acc, inc) => {
                 const incomeAmount = convertToDisplayCurrency(inc.amount, inc.currency);
                 if (inc.category === 'monthly') return acc + incomeAmount;
@@ -148,7 +166,7 @@ export default function Charts() {
                 Income: monthlyIncome,
             };
         });
-    }, [filteredCosts, filteredIncome, currentCapital, startDate, startingCapitalCurrency, settings.baseCurrency, convertToBaseCurrency, convertToDisplayCurrency, getTimeframePeriods]);
+    }, [filteredCosts, filteredIncome, loans, currentCapital, startDate, startingCapitalCurrency, settings.baseCurrency, convertToBaseCurrency, convertToDisplayCurrency, getTimeframePeriods]);
 
 
     if (!exchangeRates) {

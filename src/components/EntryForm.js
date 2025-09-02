@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import { useBudget } from '@/context/BudgetContext';
-import { Plus } from 'lucide-react';
+import { Plus, Info } from 'lucide-react';
 import DateInput from './DateInput';
+import Tooltip from './Tooltip';
 
 function FormSection({ title, children }) {
   return (
@@ -52,7 +53,7 @@ function Select({ className = "", children, ...props }) {
 }
 
 export default function EntryForm() {
-  const { settings, addCost, addIncome, exchangeRates } = useBudget();
+  const { settings, addCost, addIncome, addLoan, exchangeRates } = useBudget();
   const [entryType, setEntryType] = useState('cost');
   const [description, setDescription] = useState('');
   const [customDescription, setCustomDescription] = useState('');
@@ -63,6 +64,15 @@ export default function EntryForm() {
   const [date, setDate] = useState('');
   const [applyTax, setApplyTax] = useState(false);
   const [taxPercentage, setTaxPercentage] = useState('');
+
+  // Loan-specific fields
+  const [loanName, setLoanName] = useState('');
+  const [principal, setPrincipal] = useState('');
+  const [interestRate, setInterestRate] = useState('');
+  const [interestRateType, setInterestRateType] = useState('annual');
+  const [loanTerm, setLoanTerm] = useState('');
+  const [termUnit, setTermUnit] = useState('months');
+  const [startDate, setStartDate] = useState('');
 
   const convertedAmount = () => {
     if (!exchangeRates || !amount || currency === settings.baseCurrency) return null;
@@ -101,41 +111,78 @@ export default function EntryForm() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const finalDescription = description === 'Add Custom Category' ? customDescription : description;
     
-    // Calculate net amount for income with tax applied
-    let finalAmount = parseFloat(amount);
-    if (entryType === 'income' && applyTax && taxPercentage) {
-      const taxRate = parseFloat(taxPercentage) / 100;
-      finalAmount = finalAmount * (1 - taxRate);
+    if (entryType === 'loan') {
+      // Handle loan submission
+      const termInMonths = termUnit === 'years' ? parseInt(loanTerm) * 12 : parseInt(loanTerm);
+      
+      // Convert monthly rate to annual if needed (loan calculations expect annual rate)
+      const annualInterestRate = interestRateType === 'monthly' 
+        ? parseFloat(interestRate) * 12 
+        : parseFloat(interestRate);
+      
+      const newLoan = {
+        name: loanName,
+        principal: parseFloat(principal),
+        interestRate: annualInterestRate,
+        termMonths: termInMonths,
+        startDate,
+        currency,
+        type: 'loan'
+      };
+      
+      addLoan(newLoan);
+      
+      // Reset loan form
+      setLoanName('');
+      setPrincipal('');
+      setInterestRate('');
+      setInterestRateType('annual');
+      setLoanTerm('');
+      setTermUnit('months');
+      setStartDate('');
+    } else {
+      // Handle regular income/expense submission
+      const finalDescription = description === 'Add Custom Category' ? customDescription : description;
+      
+      // Calculate net amount for income with tax applied
+      let finalAmount = parseFloat(amount);
+      if (entryType === 'income' && applyTax && taxPercentage) {
+        const taxRate = parseFloat(taxPercentage) / 100;
+        finalAmount = finalAmount * (1 - taxRate);
+      }
+      
+      const newEntry = {
+        description: finalDescription,
+        amount: finalAmount,
+        currency,
+        category: frequency,
+        date: frequency === 'one-time' ? date : undefined,
+        notes: optionalDescription.trim() || undefined, // Only include if not empty
+        ...(entryType === 'income' && applyTax && taxPercentage && {
+          grossAmount: parseFloat(amount),
+          taxPercentage: parseFloat(taxPercentage)
+        })
+      };
+
+      if (entryType === 'cost') addCost(newEntry);
+      else addIncome(newEntry);
+
+      // Reset regular form
+      setDescription('');
+      setCustomDescription('');
+      setAmount('');
+      setFrequency('monthly');
+      setDate('');
+      setApplyTax(false);
+      setTaxPercentage('');
     }
     
-    const newEntry = {
-      description: finalDescription,
-      amount: finalAmount,
-      currency,
-      category: frequency,
-      date: frequency === 'one-time' ? date : undefined,
-      notes: optionalDescription.trim() || undefined, // Only include if not empty
-      ...(entryType === 'income' && applyTax && taxPercentage && {
-        grossAmount: parseFloat(amount),
-        taxPercentage: parseFloat(taxPercentage)
-      })
-    };
-
-    if (entryType === 'cost') addCost(newEntry);
-    else addIncome(newEntry);
-
-    // Reset form
-    setDescription('');
-    setCustomDescription('');
-    setOptionalDescription('');
-    setAmount('');
+    // Reset common fields
+    if (entryType !== 'loan') {
+      setOptionalDescription('');
+    }
     setCurrency(settings.baseCurrency);
-    setFrequency('monthly');
-    setDate('');
-    setApplyTax(false);
-    setTaxPercentage('');
   };
 
   return (
@@ -143,7 +190,7 @@ export default function EntryForm() {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Entry Type and Frequency */}
         <FormSection>
-          <FormRow columns={2}>
+          <FormRow columns={entryType === 'loan' ? 1 : 2}>
             <FormField label="Type" required>
               <Select value={entryType} onChange={(e) => {
                 setEntryType(e.target.value);
@@ -152,92 +199,206 @@ export default function EntryForm() {
               }}>
                 <option key="cost" value="cost">Expense</option>
                 <option key="income" value="income">Income</option>
+                <option key="loan" value="loan">Loan</option>
               </Select>
             </FormField>
-            <FormField label="Frequency" required>
-              <Select value={frequency} onChange={(e) => setFrequency(e.target.value)}>
-                {(entryType === 'cost' ? costFrequencies : incomeFrequencies).map(f => (
-                  <option key={f} value={f}>
-                    {formatFrequencyLabel(f)}
-                  </option>
-                ))}
-              </Select>
-            </FormField>
+            {entryType !== 'loan' && (
+              <FormField label="Frequency" required>
+                <Select value={frequency} onChange={(e) => setFrequency(e.target.value)}>
+                  {(entryType === 'cost' ? costFrequencies : incomeFrequencies).map(f => (
+                    <option key={f} value={f}>
+                      {formatFrequencyLabel(f)}
+                    </option>
+                  ))}
+                </Select>
+              </FormField>
+            )}
           </FormRow>
         </FormSection>
         
-        {/* Category Selection */}
-        <FormSection>
-          <FormField label="Choose Category" required>
-            <Select value={description} onChange={(e) => setDescription(e.target.value)}>
-              <option key="disabled" value="" disabled>Select a category...</option>
-              {(entryType === 'cost' ? expenseCategories : incomeCategories).map(c => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-              <option key="custom" value="Add Custom Category">Add Custom Category...</option>
-            </Select>
-          </FormField>
-          
-          {description === 'Add Custom Category' && (
-            <FormField label="Custom Category Name" required>
+        {/* Loan Name or Category Selection */}
+        {entryType === 'loan' ? (
+          <FormSection>
+            <FormField label="Loan Name" required>
               <Input 
                 type="text" 
-                value={customDescription} 
-                onChange={(e) => setCustomDescription(e.target.value)} 
-                placeholder={entryType === 'cost' ? "e.g., Coffee, Gym membership..." : "e.g., Weekend Job, Photography Gig..."} 
+                value={loanName} 
+                onChange={(e) => setLoanName(e.target.value)} 
+                placeholder="e.g., Mortgage, Car Loan, Personal Loan..." 
               />
             </FormField>
-          )}
-        </FormSection>
-
-        {/* Optional Description */}
-        <FormSection>
-          <FormField label="Add Description (Optional)">
-            <Input 
-              type="text" 
-              value={optionalDescription} 
-              onChange={(e) => setOptionalDescription(e.target.value)} 
-              placeholder="e.g., Monthly Netflix Subscription" 
-            />
-          </FormField>
-        </FormSection>
-
-        {/* Amount and Currency */}
-        <FormSection>
-          <FormRow columns={2}>
-            <FormField label="Amount" required>
-              <Input 
-                type="number" 
-                value={amount} 
-                onChange={(e) => setAmount(e.target.value)} 
-                placeholder="0.00"
-                step="0.01"
-                min="0"
-                className="font-semibold"
-              />
-            </FormField>
-            <FormField label="Currency" required>
-              <Select value={currency} onChange={(e) => setCurrency(e.target.value)}>
-                {settings.availableCurrencies.map((c) => (
-                  <option key={c.code} value={c.code}>
-                    {c.code} - {c.name}
-                  </option>
+          </FormSection>
+        ) : (
+          <FormSection>
+            <FormField label="Choose Category" required>
+              <Select value={description} onChange={(e) => setDescription(e.target.value)}>
+                <option key="disabled" value="" disabled>Select a category...</option>
+                {(entryType === 'cost' ? expenseCategories : incomeCategories).map(c => (
+                  <option key={c} value={c}>{c}</option>
                 ))}
+                <option key="custom" value="Add Custom Category">Add Custom Category...</option>
               </Select>
             </FormField>
-          </FormRow>
-          
-          {convertedAmount() && (
-            <div className="text-center">
-              <p className="text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2 inline-block">
-                {convertedAmount()} in {settings.baseCurrency}
-              </p>
-            </div>
-          )}
-        </FormSection>
+            
+            {description === 'Add Custom Category' && (
+              <FormField label="Custom Category Name" required>
+                <Input 
+                  type="text" 
+                  value={customDescription} 
+                  onChange={(e) => setCustomDescription(e.target.value)} 
+                  placeholder={entryType === 'cost' ? "e.g., Coffee, Gym membership..." : "e.g., Weekend Job, Photography Gig..."} 
+                />
+              </FormField>
+            )}
+          </FormSection>
+        )}
+
+        {/* Optional Description - Only for non-loan entries */}
+        {entryType !== 'loan' && (
+          <FormSection>
+            <FormField label="Add Description (Optional)">
+              <Input 
+                type="text" 
+                value={optionalDescription} 
+                onChange={(e) => setOptionalDescription(e.target.value)} 
+                placeholder="e.g., Monthly Netflix Subscription" 
+              />
+            </FormField>
+          </FormSection>
+        )}
+
+        {/* Loan Details */}
+        {entryType === 'loan' ? (
+          <FormSection>
+            {/* Loan Amount and Currency Row */}
+            <FormRow columns={2}>
+              <FormField label="Loan Amount" required>
+                <Input 
+                  type="number" 
+                  value={principal} 
+                  onChange={(e) => setPrincipal(e.target.value)} 
+                  placeholder="0.00"
+                  step="0.01"
+                  min="0"
+                  className="font-semibold"
+                />
+              </FormField>
+              <FormField label="Currency" required>
+                <Select value={currency} onChange={(e) => setCurrency(e.target.value)}>
+                  {settings.availableCurrencies.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.code} - {c.name}
+                    </option>
+                  ))}
+                </Select>
+              </FormField>
+            </FormRow>
+            
+            {/* Interest Rate and Loan Term Row */}
+            <FormRow columns={2}>
+              <FormField required>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Interest Rate ({interestRateType === 'annual' ? 'Annual' : 'Monthly'} %)
+                    <span className="text-red-500 ml-1">*</span>
+                  </label>
+                  <div className="flex space-x-2">
+                    <div className="flex-1">
+                      <Input 
+                        type="number" 
+                        value={interestRate} 
+                        onChange={(e) => setInterestRate(e.target.value)} 
+                        placeholder={interestRateType === 'annual' ? "e.g., 5.5" : "e.g., 0.46"}
+                        step="0.01"
+                        min="0"
+                        max="100"
+                        className="font-semibold"
+                      />
+                    </div>
+                    <div className="w-28">
+                      <Select value={interestRateType} onChange={(e) => setInterestRateType(e.target.value)} className="text-sm">
+                        <option value="annual">Annual</option>
+                        <option value="monthly">Monthly</option>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              </FormField>
+              <FormField required>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Loan Term
+                    <span className="text-red-500 ml-1">*</span>
+                  </label>
+                  <div className="flex space-x-2">
+                    <div className="flex-1">
+                      <Input 
+                        type="number" 
+                        value={loanTerm} 
+                        onChange={(e) => setLoanTerm(e.target.value)} 
+                        placeholder="30"
+                        min="1"
+                        className="font-semibold"
+                      />
+                    </div>
+                    <div className="w-28">
+                      <Select value={termUnit} onChange={(e) => setTermUnit(e.target.value)} className="text-sm">
+                        <option value="months">Months</option>
+                        <option value="years">Years</option>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              </FormField>
+            </FormRow>
+            
+            {/* Start Date Row */}
+            <FormField label="Start Date" required>
+              <DateInput 
+                value={startDate} 
+                onChange={(e) => setStartDate(e.target.value)}
+                placeholder="DD/MM/YYYY"
+                required
+              />
+            </FormField>
+          </FormSection>
+        ) : (
+          <FormSection>
+            <FormRow columns={2}>
+              <FormField label="Amount" required>
+                <Input 
+                  type="number" 
+                  value={amount} 
+                  onChange={(e) => setAmount(e.target.value)} 
+                  placeholder="0.00"
+                  step="0.01"
+                  min="0"
+                  className="font-semibold"
+                />
+              </FormField>
+              <FormField label="Currency" required>
+                <Select value={currency} onChange={(e) => setCurrency(e.target.value)}>
+                  {settings.availableCurrencies.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.code} - {c.name}
+                    </option>
+                  ))}
+                </Select>
+              </FormField>
+            </FormRow>
+            
+            {convertedAmount() && (
+              <div className="text-center">
+                <p className="text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2 inline-block">
+                  {convertedAmount()} in {settings.baseCurrency}
+                </p>
+              </div>
+            )}
+          </FormSection>
+        )}
 
         {/* Tax Option for Income */}
-        {entryType === 'income' && (
+        {entryType === 'income' && entryType !== 'loan' && (
           <FormSection>
             <div className="space-y-3">
               <div className="flex items-center space-x-3">
@@ -279,7 +440,7 @@ export default function EntryForm() {
         )}
 
         {/* Date for One-time entries */}
-        {frequency === 'one-time' && (
+        {frequency === 'one-time' && entryType !== 'loan' && (
           <FormSection>
             <FormField label="Date" required>
               <DateInput 
@@ -299,7 +460,7 @@ export default function EntryForm() {
             className="w-full flex items-center justify-center space-x-2 px-5 py-3 bg-blue-600 dark:bg-blue-500 text-white rounded-xl font-semibold text-base transition-all duration-200 ease-in-out hover:bg-blue-700 dark:hover:bg-blue-600 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800 transform"
           >
             <Plus size={20} />
-            <span>Add {entryType === 'cost' ? 'Expense' : 'Income'}</span>
+            <span>Add {entryType === 'cost' ? 'Expense' : entryType === 'income' ? 'Income' : 'Loan'}</span>
           </button>
         </div>
       </form>

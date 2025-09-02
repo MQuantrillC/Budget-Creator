@@ -10,10 +10,12 @@ import CurrentCapitalForm from '@/components/CurrentCapitalForm';
 import FinancialProjectionControls from '@/components/FinancialProjectionControls';
 import PercentageBreakdown from '@/components/PercentageBreakdown';
 import FinancialHealthGoals from '@/components/FinancialHealthGoals';
+import LoanRepayments from '@/components/LoanRepayments';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/Card';
-import { Wallet, TrendingUp, TrendingDown, Flame, Calculator, Target, X } from 'lucide-react';
+import { Wallet, TrendingUp, TrendingDown, Flame, Calculator, Target, X, CreditCard } from 'lucide-react';
 import ResetDataButton from '@/components/ResetDataButton';
 import ExchangeRatesTooltip from '@/components/ExchangeRatesTooltip';
+import { getLoanMonthlyPayment } from '@/utils/loanCalculations';
 
 function MetricCard({ icon: Icon, title, value, tooltipText, color = 'default' }) {
   const colorClasses = {
@@ -55,6 +57,7 @@ export default function HomePage() {
   const { 
     costs, 
     income, 
+    loans,
     currentCapital, 
     settings, 
     exchangeRates, 
@@ -95,11 +98,18 @@ export default function HomePage() {
     .filter(cost => cost.category === 'monthly')
     .reduce((acc, cost) => acc + convertToBaseCurrency(cost.amount, cost.currency), 0);
 
+  const totalMonthlyLoanPayments = loans
+    .reduce((acc, loan) => {
+      const monthlyPayment = getLoanMonthlyPayment(loan);
+      return acc + convertToBaseCurrency(monthlyPayment, loan.currency);
+    }, 0);
+
   const totalMonthlyIncome = income
     .filter(inc => inc.category === 'monthly')
     .reduce((acc, inc) => acc + convertToBaseCurrency(inc.amount, inc.currency), 0);
   
-  const burnRate = totalMonthlyIncome - totalMonthlyCosts;
+  const totalMonthlyCostsWithLoans = totalMonthlyCosts + totalMonthlyLoanPayments;
+  const burnRate = totalMonthlyIncome - totalMonthlyCostsWithLoans;
 
   const handleDeleteCost = (id) => {
     if (window.confirm('Are you sure you want to delete this expense?')) {
@@ -208,16 +218,16 @@ export default function HomePage() {
                   <p className="text-sm text-gray-400 mb-2">Monthly Spending vs Income</p>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-gray-300">
-                      You&apos;re spending {totalMonthlyCosts > 0 ? Math.round((totalMonthlyCosts / totalMonthlyIncome) * 100) : 0}% of your income
+                      You&apos;re spending {totalMonthlyCostsWithLoans > 0 ? Math.round((totalMonthlyCostsWithLoans / totalMonthlyIncome) * 100) : 0}% of your income
                     </span>
                   </div>
                   <div className="w-full bg-gray-700 rounded-full h-3">
                     <div 
                       className={`h-3 rounded-full transition-all duration-300 ${
-                        (totalMonthlyCosts / totalMonthlyIncome) <= 0.5 ? 'bg-green-500' :
-                        (totalMonthlyCosts / totalMonthlyIncome) <= 0.8 ? 'bg-yellow-500' : 'bg-red-500'
+                        (totalMonthlyCostsWithLoans / totalMonthlyIncome) <= 0.5 ? 'bg-green-500' :
+                        (totalMonthlyCostsWithLoans / totalMonthlyIncome) <= 0.8 ? 'bg-yellow-500' : 'bg-red-500'
                       }`}
-                      style={{ width: `${Math.min((totalMonthlyCosts / totalMonthlyIncome) * 100, 100)}%` }}
+                      style={{ width: `${Math.min((totalMonthlyCostsWithLoans / totalMonthlyIncome) * 100, 100)}%` }}
                     ></div>
                   </div>
                   <div className="flex justify-between text-xs text-gray-400 mt-1">
@@ -242,7 +252,7 @@ export default function HomePage() {
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <MetricCard 
               icon={Wallet} 
               title="Current Capital" 
@@ -258,18 +268,25 @@ export default function HomePage() {
               color="red"
             />
             <MetricCard 
+              icon={CreditCard}
+              title="Loan Payments"
+              value={new Intl.NumberFormat('en-US', { style: 'currency', currency: settings.baseCurrency }).format(totalMonthlyLoanPayments)}
+              tooltipText="Total monthly loan payments across all active loans."
+              color="orange"
+            />
+            <MetricCard 
               icon={TrendingUp}
               title="Monthly Income"
               value={new Intl.NumberFormat('en-US', { style: 'currency', currency: settings.baseCurrency }).format(totalMonthlyIncome)}
               tooltipText="Total of all recurring monthly income, converted to your base currency."
-              color="blue"
+              color="green"
             />
             <MetricCard 
               icon={Flame}
               title="Net Monthly Flow"
               value={new Intl.NumberFormat('en-US', { style: 'currency', currency: settings.baseCurrency }).format(burnRate)}
-              tooltipText="The difference between your monthly income and monthly costs (surplus or deficit)."
-              color={burnRate >= 0 ? 'blue' : 'red'}
+              tooltipText="The difference between your monthly income and monthly costs including loan payments (surplus or deficit)."
+              color={burnRate >= 0 ? 'green' : 'red'}
             />
           </div>
         </div>
@@ -379,6 +396,13 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+      
+      {/* Loans & Repayments Section */}
+      {loans.length > 0 && (
+        <ClientOnly>
+          <LoanRepayments />
+        </ClientOnly>
+      )}
       
       {/* Percentage Breakdown Section */}
       <ClientOnly>

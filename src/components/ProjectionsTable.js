@@ -3,11 +3,13 @@
 import { useState, useMemo } from 'react';
 import { useBudget } from '@/context/BudgetContext';
 import { addWeeks, addMonths, addYears, format } from 'date-fns';
+import { getLoanMonthlyPayment } from '@/utils/loanCalculations';
 
 export default function ProjectionsTable() {
   const { 
     costs, 
     income, 
+    loans,
     currentCapital, 
     settings, 
     exchangeRates, 
@@ -118,6 +120,30 @@ export default function ProjectionsTable() {
               }
             }
             break;
+        }
+      });
+
+      // Add loan payments as costs
+      loans.forEach(loan => {
+        const loanStartDate = new Date(loan.startDate + 'T12:00:00');
+        const intervalEnd = new Date(interval.end);
+        
+        // Check if loan is active during this period
+        if (loanStartDate < intervalEnd) {
+          const monthlyPayment = getLoanMonthlyPayment(loan);
+          const loanPaymentInDisplay = convertToDisplayCurrency(monthlyPayment, loan.currency);
+          
+          // Calculate how many payments fall in this period
+          if (periodType === 'monthly') {
+            // For monthly view, include payment if loan is active
+            periodCosts += loanPaymentInDisplay;
+          } else if (periodType === 'weekly') {
+            // For weekly view, approximate weekly payment
+            periodCosts += loanPaymentInDisplay / 4.33;
+          } else { // yearly
+            // For yearly view, calculate annual payments
+            periodCosts += loanPaymentInDisplay * 12;
+          }
         }
       });
 
