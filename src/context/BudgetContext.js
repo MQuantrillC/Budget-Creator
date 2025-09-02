@@ -75,14 +75,31 @@ const initialDummyData = {
 export function BudgetProvider({ children }) {
   const { session, isGuest } = useAuth();
   
-  const [costs, setCosts] = usePersistentState('costs', initialDummyData.costs);
-  const [income, setIncome] = usePersistentState('income', initialDummyData.income);
-  const [loans, setLoans] = usePersistentState('loans', initialDummyData.loans);
-  const [settings, setSettings] = usePersistentState('settings', initialDummyData.settings);
-  const [startingCapitalCurrency, setStartingCapitalCurrency] = usePersistentState('startingCapitalCurrency', initialDummyData.startingCapitalCurrency);
-  const [projectionDisplayCurrency, setProjectionDisplayCurrency] = usePersistentState('projectionDisplayCurrency', initialDummyData.projectionDisplayCurrency);
-  const [timeframe, setTimeframe] = usePersistentState('timeframe', initialDummyData.timeframe);
-  const [savingsGoal, setSavingsGoal] = usePersistentState('savingsGoal', initialDummyData.savingsGoal);
+  // Use persistent state only for guests, regular state for authenticated users
+  const [costs, setCosts] = isGuest && !session 
+    ? usePersistentState('costs', initialDummyData.costs)
+    : useState(initialDummyData.costs);
+  const [income, setIncome] = isGuest && !session 
+    ? usePersistentState('income', initialDummyData.income)
+    : useState(initialDummyData.income);
+  const [loans, setLoans] = isGuest && !session 
+    ? usePersistentState('loans', initialDummyData.loans)
+    : useState(initialDummyData.loans);
+  const [settings, setSettings] = isGuest && !session 
+    ? usePersistentState('settings', initialDummyData.settings)
+    : useState(initialDummyData.settings);
+  const [startingCapitalCurrency, setStartingCapitalCurrency] = isGuest && !session 
+    ? usePersistentState('startingCapitalCurrency', initialDummyData.startingCapitalCurrency)
+    : useState(initialDummyData.startingCapitalCurrency);
+  const [projectionDisplayCurrency, setProjectionDisplayCurrency] = isGuest && !session 
+    ? usePersistentState('projectionDisplayCurrency', initialDummyData.projectionDisplayCurrency)
+    : useState(initialDummyData.projectionDisplayCurrency);
+  const [timeframe, setTimeframe] = isGuest && !session 
+    ? usePersistentState('timeframe', initialDummyData.timeframe)
+    : useState(initialDummyData.timeframe);
+  const [savingsGoal, setSavingsGoal] = isGuest && !session 
+    ? usePersistentState('savingsGoal', initialDummyData.savingsGoal)
+    : useState(initialDummyData.savingsGoal);
   
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   
@@ -141,8 +158,11 @@ export function BudgetProvider({ children }) {
         }
         setIsDataLoaded(true);
       } else if (isGuest || !session) {
-        // For guests or when logged out, clear user data and use local storage
+        // For guests, load from local storage; for logged out users, start fresh
         console.log('User logged out or in guest mode - clearing data');
+        if (isGuest && !session) {
+          console.log('Guest mode - data will be loaded from local storage via usePersistentState');
+        }
         setIsDataLoaded(true);
       }
     }
@@ -228,15 +248,21 @@ export function BudgetProvider({ children }) {
     setSettings(initialDummyData.settings);
   };
 
+  // Save to local storage ONLY for guest users
   useEffect(() => {
-    localStorage.setItem('costs', JSON.stringify(costs));
-    localStorage.setItem('income', JSON.stringify(income));
-    localStorage.setItem('loans', JSON.stringify(loans));
-    localStorage.setItem('settings', JSON.stringify(settings));
-    localStorage.setItem('currentCapital', JSON.stringify(currentCapital));
-    localStorage.setItem('startDate', JSON.stringify(startDate));
-    localStorage.setItem('timeframe', JSON.stringify(timeframe));
-  }, [costs, income, loans, settings, currentCapital, startDate, timeframe]);
+    if (isGuest && !session) {
+      console.log('Saving to local storage (guest mode)');
+      localStorage.setItem('costs', JSON.stringify(costs));
+      localStorage.setItem('income', JSON.stringify(income));
+      localStorage.setItem('loans', JSON.stringify(loans));
+      localStorage.setItem('settings', JSON.stringify(settings));
+      localStorage.setItem('currentCapital', JSON.stringify(currentCapital));
+      localStorage.setItem('startDate', JSON.stringify(startDate));
+      localStorage.setItem('timeframe', JSON.stringify(timeframe));
+    } else if (session?.user?.id) {
+      console.log('Authenticated user - NOT saving to local storage, using Supabase instead');
+    }
+  }, [costs, income, loans, settings, currentCapital, startDate, timeframe, isGuest, session]);
 
   const value = {
     costs,
