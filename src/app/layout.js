@@ -4,6 +4,7 @@ import { BudgetProvider } from '@/context/BudgetContext';
 import { Toaster } from 'react-hot-toast';
 import Footer from '@/components/Footer';
 import AuthProvider from '@/components/AuthProvider';
+import AuthGuard from '@/components/AuthGuard';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -36,13 +37,15 @@ export default function RootLayout({ children }) {
       <body className={`${inter.className} font-sans transition-colors duration-200`}>
         <BudgetProvider>
           <AuthProvider>
-            <div className="flex flex-col min-h-screen">
-              <main className="flex-grow">
-                {children}
-              </main>
-              <Footer />
-              <Toaster position="bottom-right" />
-            </div>
+            <AuthGuard>
+              <div className="flex flex-col min-h-screen">
+                <main className="flex-grow">
+                  {children}
+                </main>
+                <Footer />
+                <Toaster position="bottom-right" />
+              </div>
+            </AuthGuard>
           </AuthProvider>
         </BudgetProvider>
       </body>

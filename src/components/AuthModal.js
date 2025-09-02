@@ -3,8 +3,10 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { X, Mail, Lock, User, UserPlus, ArrowLeft } from 'lucide-react';
+import { useAuth } from './AuthProvider';
 
-export default function AuthModal({ onClose, onGuest }) {
+export default function AuthModal() {
+  const { signIn, signUp, setIsGuest } = useAuth();
   const [mode, setMode] = useState('welcome'); // 'welcome', 'login', 'signup'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -36,7 +38,7 @@ export default function AuthModal({ onClose, onGuest }) {
     if (error) {
       setError(error.message);
     } else {
-      onClose();
+      // No need for onClose, session change will hide modal
     }
     
     setIsLoading(false);
@@ -155,7 +157,7 @@ export default function AuthModal({ onClose, onGuest }) {
       {/* Header */}
       <div className="relative p-8 pb-6">
         <button
-          onClick={onGuest}
+          onClick={() => setIsGuest(true)}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
         >
           <X className="h-5 w-5" />
@@ -214,7 +216,7 @@ export default function AuthModal({ onClose, onGuest }) {
           </button>
 
           <button
-            onClick={onGuest}
+            onClick={() => setIsGuest(true)}
             className="w-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium py-3 px-4 rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
           >
             Continue as Guest
@@ -241,7 +243,7 @@ export default function AuthModal({ onClose, onGuest }) {
           <ArrowLeft className="h-5 w-5" />
         </button>
         <button
-          onClick={onGuest}
+          onClick={() => setIsGuest(true)}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
         >
           <X className="h-5 w-5" />
@@ -337,7 +339,7 @@ export default function AuthModal({ onClose, onGuest }) {
           <ArrowLeft className="h-5 w-5" />
         </button>
         <button
-          onClick={onGuest}
+          onClick={() => setIsGuest(true)}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
         >
           <X className="h-5 w-5" />
