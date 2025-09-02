@@ -25,6 +25,13 @@ export default function AuthProvider({ children }) {
     console.log('🔐 AUTH PROVIDER STARTING:');
     console.log('  Supabase client available:', !!supabase);
     
+    // Debug environment variables on client side
+    if (typeof window !== 'undefined') {
+      console.log('🌐 CLIENT-SIDE ENV CHECK:');
+      console.log('  URL:', process.env.NEXT_PUBLIC_SUPABASE_URL || 'MISSING');
+      console.log('  Key length:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.length || 0);
+    }
+    
     // If Supabase is not configured, default to guest mode
     if (!supabase) {
       console.log('❌ Supabase not configured - entering guest mode');

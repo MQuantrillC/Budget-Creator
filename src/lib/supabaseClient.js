@@ -1,7 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+// Temporary hardcoded values for testing (REMOVE AFTER TESTING)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://tcjesgaqrjnpsiuvafmv.supabase.co';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRjamVzZ2FxcmpucHNpdXZhZm12Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY4MzUwNTYsImV4cCI6MjA3MjQxMTA1Nn0.dDijd2Ex80yxAyv74GYOTMaC7elz9p2SNWJ1_S3bDhw';
 
 // Debug environment variables
 console.log('🔧 SUPABASE CLIENT INIT:');
