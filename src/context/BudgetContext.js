@@ -123,52 +123,51 @@ export function BudgetProvider({ children }) {
       console.log('  Is Guest:', isGuest);
       console.log('  Data Loaded:', isDataLoaded);
       
-      if (session?.user?.id && !isDataLoaded) {
-        console.log('📥 Loading Supabase data for authenticated user:', session.user.id);
-        const { data, error } = await loadUserBudgetData();
-        
-        if (error) {
-          console.error('❌ Failed to load user data:', error);
-        } else if (data) {
-          console.log('✅ User data loaded from Supabase:', Object.keys(data));
-          // Load user's saved data
-          if (data.costs) setCosts(data.costs);
-          if (data.income) setIncome(data.income);
-          if (data.loans) setLoans(data.loans);
-          if (data.settings) setSettings(data.settings);
-          if (data.currentCapital !== undefined) setCurrentCapital(data.currentCapital);
-          if (data.startDate) setStartDate(data.startDate);
-          if (data.startingCapitalCurrency) setStartingCapitalCurrency(data.startingCapitalCurrency);
-          if (data.projectionDisplayCurrency) setProjectionDisplayCurrency(data.projectionDisplayCurrency);
-          if (data.timeframe) setTimeframe(data.timeframe);
-          if (data.savingsGoal) setSavingsGoal(data.savingsGoal);
-        } else {
-          console.log('ℹ️ No existing data found for user - starting fresh');
+      if (session?.user?.id) {
+        if (!isDataLoaded) {
+          console.log('📥 Loading Supabase data for authenticated user:', session.user.id);
+          const { data, error } = await loadUserBudgetData();
+          
+          if (error) {
+            console.error('❌ Failed to load user data:', error);
+          } else if (data) {
+            console.log('✅ User data loaded from Supabase:', Object.keys(data));
+            // Load user's saved data
+            if (data.costs) setCosts(data.costs);
+            if (data.income) setIncome(data.income);
+            if (data.loans) setLoans(data.loans);
+            if (data.settings) setSettings(data.settings);
+            if (data.currentCapital !== undefined) setCurrentCapital(data.currentCapital);
+            if (data.startDate) setStartDate(data.startDate);
+            if (data.startingCapitalCurrency) setStartingCapitalCurrency(data.startingCapitalCurrency);
+            if (data.projectionDisplayCurrency) setProjectionDisplayCurrency(data.projectionDisplayCurrency);
+            if (data.timeframe) setTimeframe(data.timeframe);
+            if (data.savingsGoal) setSavingsGoal(data.savingsGoal);
+          } else {
+            console.log('ℹ️ No existing data found for user - starting fresh');
+          }
+          setIsDataLoaded(true);
         }
-        setIsDataLoaded(true);
-      } else if (isGuest || !session) {
-        // For guests, load from local storage; for logged out users, start fresh
-        console.log('👤 User logged out or in guest mode - clearing data');
-        if (isGuest && !session) {
-          console.log('📱 Guest mode - data will be loaded from local storage');
+      } else if (!session) {
+        // User logged out - clear data and reset
+        if (isDataLoaded) {
+          console.log('🧹 User logged out - resetting to default data');
+          setCosts([]);
+          setIncome([]);
+          setLoans([]);
+          setCurrentCapital(0);
+          setStartDate(getFirstDayOfCurrentMonth());
+          setIsDataLoaded(false); // Reset to allow loading new user's data
         }
+      } else if (isGuest) {
+        // Guest mode
+        console.log('👤 Guest mode - using local storage');
         setIsDataLoaded(true);
       }
     }
 
-    // Clear data when user logs out
-    if (!session && isDataLoaded) {
-      console.log('User logged out - resetting to default data');
-      setCosts([]);
-      setIncome([]);
-      setLoans([]);
-      setCurrentCapital(0);
-      setStartDate(new Date().toISOString().split('T')[0]);
-      setIsDataLoaded(false); // Reset to allow loading new user's data
-    }
-
     loadUserData();
-  }, [session, isGuest, isDataLoaded, setCosts, setIncome, setLoans, setSettings, setStartingCapitalCurrency, setProjectionDisplayCurrency, setTimeframe, setSavingsGoal]);
+  }, [session, isGuest, isDataLoaded]);
 
   // Save user data when it changes (for authenticated users only)
   useEffect(() => {
