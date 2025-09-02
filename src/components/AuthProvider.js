@@ -50,7 +50,8 @@ export default function AuthProvider({ children }) {
       setUser(null);
       setIsGuest(false);
     },
-    signIn: (options) => supabase.auth.signInWithOAuth(options),
+    signInWithPassword: (credentials) => supabase.auth.signInWithPassword(credentials),
+    signInWithOAuth: (options) => supabase.auth.signInWithOAuth(options),
     signUp: (credentials) => supabase.auth.signUp(credentials),
   };
 

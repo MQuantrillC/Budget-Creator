@@ -6,7 +6,7 @@ import { X, Mail, Lock, User, UserPlus, ArrowLeft } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 
 export default function AuthModal() {
-  const { signIn, signUp, setIsGuest } = useAuth();
+  const { signInWithPassword, signUp, signInWithOAuth, setIsGuest } = useAuth();
   const [mode, setMode] = useState('welcome'); // 'welcome', 'login', 'signup'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -30,7 +30,7 @@ export default function AuthModal() {
     setIsLoading(true);
     setError('');
     
-    const { error } = await supabase.auth.signInWithPassword({ 
+    const { error } = await signInWithPassword({ 
       email, 
       password 
     });
@@ -68,7 +68,7 @@ export default function AuthModal() {
     setIsLoading(true);
     setError('');
     
-    const { error } = await supabase.auth.signUp({ 
+    const { error } = await signUp({ 
       email, 
       password,
       options: {
@@ -114,7 +114,7 @@ export default function AuthModal() {
     setError('');
     
     try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: window.location.origin,
