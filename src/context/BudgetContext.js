@@ -57,6 +57,7 @@ export function BudgetProvider({ children }) {
   const [savingsGoal, setSavingsGoal] = useState(initialDummyData.savingsGoal);
   
   const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState(null);
   
   // Load initial data from local storage for guests
   useEffect(() => {
@@ -120,8 +121,31 @@ export function BudgetProvider({ children }) {
     async function loadUserData() {
       console.log('💾 BUDGET DATA LOADING:');
       console.log('  Session:', session ? `${session.user.email} (${session.user.id})` : 'None');
+      console.log('  Current User ID:', currentUserId);
       console.log('  Is Guest:', isGuest);
       console.log('  Data Loaded:', isDataLoaded);
+      
+      // Check if user has changed
+      const newUserId = session?.user?.id || null;
+      if (currentUserId !== newUserId) {
+        console.log('👤 USER CHANGED:', currentUserId, '->', newUserId);
+        
+        // Clear previous user's data first
+        console.log('🧹 Clearing previous user data...');
+        setCosts(initialDummyData.costs);
+        setIncome(initialDummyData.income);
+        setLoans(initialDummyData.loans);
+        setSettings(initialDummyData.settings);
+        setCurrentCapital(initialDummyData.currentCapital);
+        setStartDate(initialDummyData.startDate);
+        setStartingCapitalCurrency(initialDummyData.startingCapitalCurrency);
+        setProjectionDisplayCurrency(initialDummyData.projectionDisplayCurrency);
+        setTimeframe(initialDummyData.timeframe);
+        setSavingsGoal(initialDummyData.savingsGoal);
+        
+        setCurrentUserId(newUserId);
+        setIsDataLoaded(false);
+      }
       
       if (session?.user?.id) {
         if (!isDataLoaded) {
@@ -150,15 +174,19 @@ export function BudgetProvider({ children }) {
         }
       } else if (!session) {
         // User logged out - clear data and reset
-        if (isDataLoaded) {
-          console.log('🧹 User logged out - resetting to default data');
-          setCosts([]);
-          setIncome([]);
-          setLoans([]);
-          setCurrentCapital(0);
-          setStartDate(getFirstDayOfCurrentMonth());
-          setIsDataLoaded(false); // Reset to allow loading new user's data
-        }
+        console.log('🧹 User logged out - resetting to default data');
+        setCosts(initialDummyData.costs);
+        setIncome(initialDummyData.income);
+        setLoans(initialDummyData.loans);
+        setSettings(initialDummyData.settings);
+        setCurrentCapital(initialDummyData.currentCapital);
+        setStartDate(initialDummyData.startDate);
+        setStartingCapitalCurrency(initialDummyData.startingCapitalCurrency);
+        setProjectionDisplayCurrency(initialDummyData.projectionDisplayCurrency);
+        setTimeframe(initialDummyData.timeframe);
+        setSavingsGoal(initialDummyData.savingsGoal);
+        setCurrentUserId(null);
+        setIsDataLoaded(false); // Reset to allow loading new user's data
       } else if (isGuest) {
         // Guest mode
         console.log('👤 Guest mode - using local storage');
@@ -167,18 +195,9 @@ export function BudgetProvider({ children }) {
     }
 
     loadUserData();
-  }, [session, isGuest, isDataLoaded, setCosts, setIncome, setLoans, setSettings, setStartingCapitalCurrency, setProjectionDisplayCurrency, setTimeframe, setSavingsGoal]);
+  }, [session, isGuest, isDataLoaded, currentUserId]);
 
-  // Trigger data loading when session changes (login/logout)
-  useEffect(() => {
-    if (session?.user?.id) {
-      console.log('🔄 SESSION CHANGED - User logged in:', session.user.email, session.user.id);
-      setIsDataLoaded(false); // Force reload of user data
-    } else if (!session && !isGuest) {
-      console.log('🔄 SESSION CHANGED - User logged out');
-      setIsDataLoaded(false); // Force data clearing
-    }
-  }, [session?.user?.id]);
+
 
   // Save user data when it changes (for authenticated users only)
   useEffect(() => {
