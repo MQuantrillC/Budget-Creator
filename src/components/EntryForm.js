@@ -2,9 +2,8 @@
 
 import { useState } from 'react';
 import { useBudget } from '@/context/BudgetContext';
-import { Plus, Info } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import DateInput from './DateInput';
-import Tooltip from './Tooltip';
 
 function FormSection({ title, children }) {
   return (
