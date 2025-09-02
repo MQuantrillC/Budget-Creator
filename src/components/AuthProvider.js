@@ -22,8 +22,12 @@ export default function AuthProvider({ children }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    console.log('🔐 AUTH PROVIDER STARTING:');
+    console.log('  Supabase client available:', !!supabase);
+    
     // If Supabase is not configured, default to guest mode
     if (!supabase) {
+      console.log('❌ Supabase not configured - entering guest mode');
       setIsGuest(true);
       setShowModal(false);
       setIsLoading(false);
@@ -38,19 +42,21 @@ export default function AuthProvider({ children }) {
     // Get initial session with error handling
     const initializeAuth = async () => {
       try {
+        console.log('🔍 Getting initial session...');
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) {
-          console.error('Error getting session:', error);
+          console.error('❌ Error getting session:', error);
           setIsGuest(true);
           setShowModal(false);
         } else {
+          console.log('✅ Initial session result:', session ? `User: ${session.user.email} (ID: ${session.user.id})` : 'No session');
           setSession(session);
           if (session) {
             setShowModal(false);
           }
         }
       } catch (err) {
-        console.error('Failed to initialize auth:', err);
+        console.error('❌ Failed to initialize auth:', err);
         setIsGuest(true);
         setShowModal(false);
       } finally {
@@ -63,14 +69,15 @@ export default function AuthProvider({ children }) {
     // Listen for auth changes with error handling
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       try {
+        console.log('🔄 Auth state change:', event, session ? `User: ${session.user.email} (ID: ${session.user.id})` : 'Signed out');
         setSession(session);
         if (session) {
           setShowModal(false);
         }
       } catch (err) {
-        console.error('Auth state change error:', err);
+        console.error('❌ Auth state change error:', err);
       }
     });
 

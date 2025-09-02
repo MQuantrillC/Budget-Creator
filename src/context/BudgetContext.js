@@ -118,11 +118,19 @@ export function BudgetProvider({ children }) {
   // Load user data when they log in or clear data when they log out
   useEffect(() => {
     async function loadUserData() {
+      console.log('💾 BUDGET DATA LOADING:');
+      console.log('  Session:', session ? `${session.user.email} (${session.user.id})` : 'None');
+      console.log('  Is Guest:', isGuest);
+      console.log('  Data Loaded:', isDataLoaded);
+      
       if (session?.user?.id && !isDataLoaded) {
-        console.log('Loading data for authenticated user:', session.user.id);
+        console.log('📥 Loading Supabase data for authenticated user:', session.user.id);
         const { data, error } = await loadUserBudgetData();
         
-        if (!error && data) {
+        if (error) {
+          console.error('❌ Failed to load user data:', error);
+        } else if (data) {
+          console.log('✅ User data loaded from Supabase:', Object.keys(data));
           // Load user's saved data
           if (data.costs) setCosts(data.costs);
           if (data.income) setIncome(data.income);
@@ -134,13 +142,15 @@ export function BudgetProvider({ children }) {
           if (data.projectionDisplayCurrency) setProjectionDisplayCurrency(data.projectionDisplayCurrency);
           if (data.timeframe) setTimeframe(data.timeframe);
           if (data.savingsGoal) setSavingsGoal(data.savingsGoal);
+        } else {
+          console.log('ℹ️ No existing data found for user - starting fresh');
         }
         setIsDataLoaded(true);
       } else if (isGuest || !session) {
         // For guests, load from local storage; for logged out users, start fresh
-        console.log('User logged out or in guest mode - clearing data');
+        console.log('👤 User logged out or in guest mode - clearing data');
         if (isGuest && !session) {
-          console.log('Guest mode - data will be loaded from local storage via usePersistentState');
+          console.log('📱 Guest mode - data will be loaded from local storage');
         }
         setIsDataLoaded(true);
       }
@@ -164,6 +174,10 @@ export function BudgetProvider({ children }) {
   useEffect(() => {
     async function saveUserData() {
       if (session?.user?.id && isDataLoaded) {
+        console.log('💾 SAVING DATA:');
+        console.log('  User:', session.user.email, '(' + session.user.id + ')');
+        console.log('  Data items:', { costs: costs.length, income: income.length, loans: loans.length });
+        
         const budgetData = {
           costs,
           income,
@@ -179,7 +193,9 @@ export function BudgetProvider({ children }) {
 
         const { error } = await saveUserBudgetData(budgetData);
         if (error) {
-          console.error('Failed to save budget data:', error);
+          console.error('❌ Failed to save budget data:', error);
+        } else {
+          console.log('✅ Budget data saved to Supabase successfully');
         }
       }
     }
