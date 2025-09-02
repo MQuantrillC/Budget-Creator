@@ -6,42 +6,13 @@ import { currencies } from '@/utils/currencies';
 import { saveUserBudgetData, loadUserBudgetData } from '@/lib/supabaseDatabase';
 import { useAuth } from '@/components/AuthProvider';
 
-// Custom hook for persisting state to local storage
-function usePersistentState(key, defaultValue) {
-  const [state, setState] = useState(defaultValue);
-  const [isHydrated, setHydrated] = useState(false);
-
-  useEffect(() => {
-    try {
-      const storedValue = localStorage.getItem(key);
-      if (storedValue) {
-        setState(JSON.parse(storedValue));
-      }
-    } catch (error) {
-      console.error(error);
-    }
-    setHydrated(true);
-  }, [key]);
-
-  useEffect(() => {
-    if (isHydrated) {
-      try {
-        localStorage.setItem(key, JSON.stringify(state));
-      } catch (error) {
-        console.error(error);
-      }
-    }
-  }, [key, state, isHydrated]);
-
-  return [state, setState];
+// Helper function to get first day of current month
+function getFirstDayOfCurrentMonth() {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
 }
 
-// Helper function to get first day of current month
-const getFirstDayOfCurrentMonth = () => {
-  const now = new Date();
-  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-  return firstDay.toISOString().split('T')[0]; // YYYY-MM-DD format
-};
+
 
 const BudgetContext = createContext();
 
@@ -75,33 +46,49 @@ const initialDummyData = {
 export function BudgetProvider({ children }) {
   const { session, isGuest } = useAuth();
   
-  // Use persistent state only for guests, regular state for authenticated users
-  const [costs, setCosts] = isGuest && !session 
-    ? usePersistentState('costs', initialDummyData.costs)
-    : useState(initialDummyData.costs);
-  const [income, setIncome] = isGuest && !session 
-    ? usePersistentState('income', initialDummyData.income)
-    : useState(initialDummyData.income);
-  const [loans, setLoans] = isGuest && !session 
-    ? usePersistentState('loans', initialDummyData.loans)
-    : useState(initialDummyData.loans);
-  const [settings, setSettings] = isGuest && !session 
-    ? usePersistentState('settings', initialDummyData.settings)
-    : useState(initialDummyData.settings);
-  const [startingCapitalCurrency, setStartingCapitalCurrency] = isGuest && !session 
-    ? usePersistentState('startingCapitalCurrency', initialDummyData.startingCapitalCurrency)
-    : useState(initialDummyData.startingCapitalCurrency);
-  const [projectionDisplayCurrency, setProjectionDisplayCurrency] = isGuest && !session 
-    ? usePersistentState('projectionDisplayCurrency', initialDummyData.projectionDisplayCurrency)
-    : useState(initialDummyData.projectionDisplayCurrency);
-  const [timeframe, setTimeframe] = isGuest && !session 
-    ? usePersistentState('timeframe', initialDummyData.timeframe)
-    : useState(initialDummyData.timeframe);
-  const [savingsGoal, setSavingsGoal] = isGuest && !session 
-    ? usePersistentState('savingsGoal', initialDummyData.savingsGoal)
-    : useState(initialDummyData.savingsGoal);
+  // Use regular state for all users, handle persistence separately
+  const [costs, setCosts] = useState(initialDummyData.costs);
+  const [income, setIncome] = useState(initialDummyData.income);
+  const [loans, setLoans] = useState(initialDummyData.loans);
+  const [settings, setSettings] = useState(initialDummyData.settings);
+  const [startingCapitalCurrency, setStartingCapitalCurrency] = useState(initialDummyData.startingCapitalCurrency);
+  const [projectionDisplayCurrency, setProjectionDisplayCurrency] = useState(initialDummyData.projectionDisplayCurrency);
+  const [timeframe, setTimeframe] = useState(initialDummyData.timeframe);
+  const [savingsGoal, setSavingsGoal] = useState(initialDummyData.savingsGoal);
   
   const [isDataLoaded, setIsDataLoaded] = useState(false);
+  
+  // Load initial data from local storage for guests
+  useEffect(() => {
+    if (isGuest && !session && typeof window !== 'undefined') {
+      console.log('Loading guest data from local storage');
+      try {
+        const storedCosts = localStorage.getItem('costs');
+        const storedIncome = localStorage.getItem('income');
+        const storedLoans = localStorage.getItem('loans');
+        const storedSettings = localStorage.getItem('settings');
+        const storedCurrentCapital = localStorage.getItem('currentCapital');
+        const storedStartDate = localStorage.getItem('startDate');
+        const storedTimeframe = localStorage.getItem('timeframe');
+        const storedStartingCapitalCurrency = localStorage.getItem('startingCapitalCurrency');
+        const storedProjectionDisplayCurrency = localStorage.getItem('projectionDisplayCurrency');
+        const storedSavingsGoal = localStorage.getItem('savingsGoal');
+        
+        if (storedCosts) setCosts(JSON.parse(storedCosts));
+        if (storedIncome) setIncome(JSON.parse(storedIncome));
+        if (storedLoans) setLoans(JSON.parse(storedLoans));
+        if (storedSettings) setSettings(JSON.parse(storedSettings));
+        if (storedCurrentCapital) setCurrentCapital(JSON.parse(storedCurrentCapital));
+        if (storedStartDate) setStartDate(JSON.parse(storedStartDate));
+        if (storedTimeframe) setTimeframe(JSON.parse(storedTimeframe));
+        if (storedStartingCapitalCurrency) setStartingCapitalCurrency(JSON.parse(storedStartingCapitalCurrency));
+        if (storedProjectionDisplayCurrency) setProjectionDisplayCurrency(JSON.parse(storedProjectionDisplayCurrency));
+        if (storedSavingsGoal) setSavingsGoal(JSON.parse(storedSavingsGoal));
+      } catch (error) {
+        console.error('Error loading guest data from local storage:', error);
+      }
+    }
+  }, [isGuest, session]);
   
   // Update available currencies if they've changed (e.g., PEN was removed)
   useEffect(() => {
@@ -116,16 +103,8 @@ export function BudgetProvider({ children }) {
       });
     }
   }, [settings.availableCurrencies, settings, setSettings]);
-  const [currentCapital, setCurrentCapital] = useState(() => {
-    if (typeof window === 'undefined') return 0;
-    const saved = localStorage.getItem('currentCapital');
-    return saved ? JSON.parse(saved) : 0;
-  });
-  const [startDate, setStartDate] = useState(() => {
-    if (typeof window === 'undefined') return getFirstDayOfCurrentMonth();
-    const saved = localStorage.getItem('startDate');
-    return saved ? JSON.parse(saved) : getFirstDayOfCurrentMonth();
-  });
+  const [currentCapital, setCurrentCapital] = useState(0);
+  const [startDate, setStartDate] = useState(getFirstDayOfCurrentMonth());
   const [exchangeRates, setExchangeRates] = useState(null);
 
   useEffect(() => {
@@ -259,10 +238,13 @@ export function BudgetProvider({ children }) {
       localStorage.setItem('currentCapital', JSON.stringify(currentCapital));
       localStorage.setItem('startDate', JSON.stringify(startDate));
       localStorage.setItem('timeframe', JSON.stringify(timeframe));
+      localStorage.setItem('startingCapitalCurrency', JSON.stringify(startingCapitalCurrency));
+      localStorage.setItem('projectionDisplayCurrency', JSON.stringify(projectionDisplayCurrency));
+      localStorage.setItem('savingsGoal', JSON.stringify(savingsGoal));
     } else if (session?.user?.id) {
       console.log('Authenticated user - NOT saving to local storage, using Supabase instead');
     }
-  }, [costs, income, loans, settings, currentCapital, startDate, timeframe, isGuest, session]);
+  }, [costs, income, loans, settings, currentCapital, startDate, timeframe, startingCapitalCurrency, projectionDisplayCurrency, savingsGoal, isGuest, session]);
 
   const value = {
     costs,
