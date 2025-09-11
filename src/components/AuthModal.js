@@ -6,7 +6,7 @@ import { X, Mail, Lock, User, UserPlus, ArrowLeft } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 
 export default function AuthModal() {
-  const { signInWithPassword, signUp, signInWithOAuth, setIsGuest } = useAuth();
+  const { signInWithPassword, signUp, signInWithOAuth, setIsGuest, hideAuthModal } = useAuth();
   const [mode, setMode] = useState('welcome'); // 'welcome', 'login', 'signup'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -39,6 +39,7 @@ export default function AuthModal() {
       setError(error.message);
     } else {
       // No need for onClose, session change will hide modal
+      if (hideAuthModal) hideAuthModal();
     }
     
     setIsLoading(false);
@@ -157,7 +158,10 @@ export default function AuthModal() {
       {/* Header */}
       <div className="relative p-8 pb-6">
         <button
-          onClick={() => setIsGuest(true)}
+          onClick={() => {
+            setIsGuest(true);
+            if (hideAuthModal) hideAuthModal();
+          }}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
         >
           <X className="h-5 w-5" />
@@ -243,7 +247,10 @@ export default function AuthModal() {
           <ArrowLeft className="h-5 w-5" />
         </button>
         <button
-          onClick={() => setIsGuest(true)}
+          onClick={() => {
+            setIsGuest(true);
+            if (hideAuthModal) hideAuthModal();
+          }}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
         >
           <X className="h-5 w-5" />
@@ -339,7 +346,10 @@ export default function AuthModal() {
           <ArrowLeft className="h-5 w-5" />
         </button>
         <button
-          onClick={() => setIsGuest(true)}
+          onClick={() => {
+            setIsGuest(true);
+            if (hideAuthModal) hideAuthModal();
+          }}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
         >
           <X className="h-5 w-5" />

@@ -12,6 +12,7 @@ export default function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isGuest, setIsGuest] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   useEffect(() => {
     console.log('🔐 AUTH PROVIDER STARTING:');
@@ -41,6 +42,9 @@ export default function AuthProvider({ children }) {
     user,
     isGuest,
     isLoading,
+    isAuthModalOpen,
+    showAuthModal: () => setIsAuthModalOpen(true),
+    hideAuthModal: () => setIsAuthModalOpen(false),
     setIsGuest, // Add this
     signOut: async () => {
       if (supabase) {

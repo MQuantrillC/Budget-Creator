@@ -5,11 +5,11 @@ import AuthModal from './AuthModal';
 import ClientOnly from './ClientOnly';
 
 export default function AuthGuard({ children }) {
-  const { session, isGuest } = useAuth();
+  const { session, isGuest, isAuthModalOpen } = useAuth();
 
   return (
     <ClientOnly>
-      {!isGuest && !session ? <AuthModal /> : children}
+      {(!isGuest && !session) || isAuthModalOpen ? <AuthModal /> : children}
     </ClientOnly>
   );
 }
