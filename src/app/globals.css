@@ -1,125 +1,268 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* ---------------------------------------------------------------------------
+   Retro accounting ledger theme
+   Cream paper, ruled hairlines, ink text, credit green / debit red,
+   monospace figures. One light "paper" theme, on purpose.
+--------------------------------------------------------------------------- */
 
 @theme {
-  --color-white: #ffffff;
-  --color-gray-50: #f9fafb;
-  --color-gray-100: #f3f4f6;
-  --color-gray-200: #e5e7eb;
-  --color-gray-300: #d1d5db;
-  --color-gray-400: #9ca3af;
-  --color-gray-500: #6b7280;
-  --color-gray-600: #4b5563;
-  --color-gray-700: #374151;
-  --color-gray-800: #1f2937;
-  --color-gray-900: #111827;
-  --color-green-50: #f0fdf4;
-  --color-green-100: #dcfce7;
-  --color-green-200: #bbf7d0;
-  --color-green-500: #22c55e;
-  --color-green-600: #16a34a;
-  --color-blue-50: #eff6ff;
-  --color-blue-100: #dbeafe;
-  --color-blue-200: #bfdbfe;
-  --color-blue-500: #3b82f6;
-  --color-blue-600: #2563eb;
-  --color-red-50: #fef2f2;
-  --color-red-100: #fee2e2;
-  --color-red-200: #fecaca;
-  --color-red-500: #ef4444;
-  --color-red-600: #dc2626;
-  --color-orange-50: #fff7ed;
-  --color-orange-100: #ffedd5;
-  --color-orange-200: #fed7aa;
-  --color-orange-500: #f97316;
-  --color-orange-600: #ea580c;
-  
-  --font-family-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --font-family-mono: 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', monospace;
-  
-  --border-radius-sm: 0.25rem;
-  --border-radius-md: 0.375rem;
-  --border-radius-lg: 0.5rem;
-  --border-radius-xl: 0.75rem;
-  --border-radius-2xl: 1rem;
-  --border-radius-3xl: 1.5rem;
-  
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  
-  --colors-accent-green: #10b981;
-  --colors-accent-blue: #3b82f6;
-  --colors-text-primary: #000000;
-  --colors-text-secondary: #4b5563;
-  --colors-text-muted: #6b7280;
-  --colors-success: #10b981;
-  --colors-error: #ef4444;
-  --colors-warning: #f97316;
+  /* Paper */
+  --color-paper: #f4eedf;
+  --color-card: #faf6ea;
+  --color-card-deep: #efe7d2;
+
+  /* Ink */
+  --color-ink: #2b2822;
+  --color-ink-soft: #5c564a;
+  --color-ink-faint: #8b8371;
+
+  /* Rules & hairlines */
+  --color-line: #ddd3ba;
+  --color-line-strong: #b9ac8c;
+
+  /* Ledger colors */
+  --color-credit: #2e6b4e;
+  --color-credit-deep: #22523b;
+  --color-credit-pale: #e2ecdd;
+  --color-debit: #a03d2c;
+  --color-debit-deep: #82301f;
+  --color-debit-pale: #f3e2da;
+  --color-inkblue: #33526e;
+  --color-inkblue-pale: #e2e8ec;
+  --color-gold: #a37c2c;
+  --color-gold-pale: #f0e7cd;
+
+  --font-display: var(--font-fraunces), Georgia, 'Times New Roman', serif;
+  --font-body: var(--font-libre), 'Helvetica Neue', Arial, sans-serif;
+  --font-ledger: var(--font-plex-mono), 'Courier New', monospace;
+
+  --shadow-paper: 0 1px 2px rgba(43, 40, 34, 0.08), 0 4px 12px rgba(43, 40, 34, 0.06);
 }
 
-/* Light mode variables */
+/* Variables still referenced by charts */
 :root {
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8f9fa;
-  --bg-tertiary: #f1f3f4;
-  --text-primary: #000000;
-  --text-secondary: #444444;
-  --text-muted: #888888;
-  --border-color: #e5e7eb;
-  --border-hover: #d1d5db;
-  --shadow-light: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  --shadow-medium: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-heavy: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-}
-
-/* Dark mode variables */
-.dark {
-  --bg-primary: #111827;
-  --bg-secondary: #1f2937;
-  --bg-tertiary: #374151;
-  --text-primary: #f9fafb;
-  --text-secondary: #d1d5db;
-  --text-muted: #9ca3af;
-  --border-color: #374151;
-  --border-hover: #4b5563;
-  --shadow-light: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2);
-  --shadow-medium: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
-  --shadow-heavy: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+  --border-color: #ddd3ba;
+  --text-secondary: #5c564a;
 }
 
 * {
   box-sizing: border-box;
 }
 
+html {
+  background-color: var(--color-paper);
+}
+
 body {
-  font-family: var(--font-family-sans);
+  font-family: var(--font-body);
   font-weight: 400;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: var(--bg-primary);
-  color: var(--text-secondary);
-  transition: background-color 0.2s ease, color 0.2s ease;
+  background-color: var(--color-paper);
+  /* Faint ruled-paper texture */
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 31px,
+    rgba(185, 172, 140, 0.12) 31px,
+    rgba(185, 172, 140, 0.12) 32px
+  );
+  color: var(--color-ink);
+}
+
+/* ------------------------------------------------------------------ */
+/* Reusable ledger components                                          */
+/* ------------------------------------------------------------------ */
+
+/* A ledger sheet: bordered card on clean paper */
+.ledger-card {
+  background-color: var(--color-card);
+  border: 1px solid var(--color-line-strong);
+  border-radius: 6px;
+  box-shadow: var(--shadow-paper);
+}
+
+/* Small-caps mono label, like a column heading in a ledger book */
+.ledger-label {
+  font-family: var(--font-ledger);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-ink-soft);
+}
+
+/* Monetary figures */
+.ledger-figure {
+  font-family: var(--font-ledger);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Double rule — the classic "total" underline */
+.double-rule {
+  border-bottom: 1px solid var(--color-ink);
+  position: relative;
+}
+.double-rule::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -3px;
+  border-bottom: 1px solid var(--color-ink);
+}
+
+/* Horizontal ornament rule with a diamond */
+.ornament-rule {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--color-line-strong);
+}
+.ornament-rule::before,
+.ornament-rule::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid var(--color-line-strong);
+}
+
+/* Inputs */
+.ledger-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  font-family: var(--font-body);
+  background-color: #fffdf6;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 4px;
+  color: var(--color-ink);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.ledger-input::placeholder {
+  color: var(--color-ink-faint);
+}
+.ledger-input:focus {
+  outline: none;
+  border-color: var(--color-credit);
+  box-shadow: 0 0 0 3px rgba(46, 107, 78, 0.15);
+}
+select.ledger-input {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='none' stroke='%235c564a' stroke-width='1.5' d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2.25rem;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--font-ledger);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.625rem 1.25rem;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
+}
+.btn:active {
+  transform: translateY(1px);
+}
+.btn:focus-visible {
+  outline: 2px solid var(--color-credit);
+  outline-offset: 2px;
+}
+.btn-primary {
+  background-color: var(--color-credit);
+  border-color: var(--color-credit-deep);
+  color: #f7f3e6;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.15);
+}
+.btn-primary:hover {
+  background-color: var(--color-credit-deep);
+}
+.btn-secondary {
+  background-color: transparent;
+  border-color: var(--color-line-strong);
+  color: var(--color-ink-soft);
+}
+.btn-secondary:hover {
+  background-color: var(--color-card-deep);
+  color: var(--color-ink);
+}
+.btn-ink {
+  background-color: var(--color-ink);
+  border-color: #000;
+  color: #f7f3e6;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.3);
+}
+.btn-ink:hover {
+  background-color: #3d3930;
+}
+
+/* Ledger table */
+.ledger-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+.ledger-table thead th {
+  font-family: var(--font-ledger);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-ink-soft);
+  padding: 0.75rem 1rem;
+  border-bottom: 2px solid var(--color-ink);
+  text-align: left;
+}
+.ledger-table tbody td {
+  padding: 0.625rem 1rem;
+  border-bottom: 1px solid var(--color-line);
+  color: var(--color-ink);
+}
+.ledger-table tbody tr:hover {
+  background-color: rgba(185, 172, 140, 0.1);
+}
+
+/* Compact ledger table on small screens */
+@media (max-width: 640px) {
+  .ledger-table {
+    font-size: 0.8125rem;
+  }
+  .ledger-table thead th {
+    padding: 0.5rem 0.625rem;
+    font-size: 0.625rem;
+  }
+  .ledger-table tbody td {
+    padding: 0.5rem 0.625rem;
+  }
 }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 10px;
+  height: 10px;
 }
-
 ::-webkit-scrollbar-track {
   background: transparent;
 }
-
 ::-webkit-scrollbar-thumb {
-  background: var(--border-color);
-  border-radius: 4px;
+  background: var(--color-line-strong);
+  border-radius: 5px;
+  border: 2px solid var(--color-paper);
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--border-hover);
+  background: var(--color-ink-faint);
 }
 
 /* Animations */
@@ -134,21 +277,6 @@ body {
   }
 }
 
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 .fade-in {
-  animation: fadeIn 0.6s ease-out;
-}
-
-.slide-up {
-  animation: slideUp 0.5s ease-out;
+  animation: fadeIn 0.5s ease-out;
 }

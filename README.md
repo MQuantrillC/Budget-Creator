@@ -1,36 +1,53 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Budget Creator
 
-## Getting Started
+A personal budgeting app with a retro accounting-ledger look. Track income, expenses and loans in any of 10 currencies, and project your capital months or years into the future.
 
-First, run the development server:
+## Features
+
+- **Income & expense tracking** — recurring (weekly, biweekly, monthly, semiannual, yearly) or one-time entries, with custom categories and optional notes
+- **Loans** — amortization schedules, monthly payments, total interest, and remaining balance; payments automatically flow into projections until the loan is paid off
+- **Multi-currency** — enter amounts in EUR, USD, GBP, CHF, CAD, AUD, JPY, CNY, BRL or PEN; live exchange rates convert everything to your display currency
+- **Projections** — charts and a period-by-period table (weekly / monthly / yearly) of your future capital
+- **Financial goals** — savings objectives with target dates, monthly or yearly savings targets, and progress tracking
+- **Accounts** — sign in with email or Google (Supabase) to sync your data, or use guest mode with local-only storage
+
+## Getting started
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Environment variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Create `.env.local` with your Supabase project credentials (optional — without them the app runs in guest mode only):
 
-## Learn More
+```
+NEXT_PUBLIC_SUPABASE_URL=https://<your-project>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>
+```
 
-To learn more about Next.js, take a look at the following resources:
+The Supabase database needs a `user_budgets` table with columns `user_id` (uuid, unique), `budget_data` (jsonb) and `updated_at` (timestamptz), with row-level security scoped to the authenticated user.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Tech stack
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- [Next.js 15](https://nextjs.org) (App Router) + React 19
+- [Tailwind CSS v4](https://tailwindcss.com) with a custom design-token theme (`src/app/globals.css`)
+- [Supabase](https://supabase.com) for auth and persistence
+- [Recharts](https://recharts.org) for projections charts
+- Exchange rates from [Frankfurter](https://frankfurter.app) with [open.er-api.com](https://www.exchangerate-api.com) as fallback
 
-## Deploy on Vercel
+## Scripts
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Start the dev server with hot reload |
+| `npm run build` | Production build |
+| `npm run start` | Serve the production build |
+| `npm run lint` | Run ESLint |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+Made by [Marco Quantrill](https://marco-portfolio-azure.vercel.app/)

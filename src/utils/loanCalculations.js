@@ -125,3 +125,27 @@ export function getLoanMonthlyPayment(loan) {
   );
 }
 
+/**
+ * Get the date the loan is fully repaid (start date + term)
+ * @param {Object} loan - Loan object with startDate and termMonths
+ * @returns {Date} End date of the loan
+ */
+export function getLoanEndDate(loan) {
+  const end = new Date(loan.startDate + 'T12:00:00');
+  end.setMonth(end.getMonth() + loan.termMonths);
+  return end;
+}
+
+/**
+ * Whether the loan still has payments due during the given interval.
+ * @param {Object} loan - Loan object with startDate and termMonths
+ * @param {Date} intervalStart - Start of the period
+ * @param {Date} intervalEnd - End of the period (exclusive)
+ * @returns {boolean}
+ */
+export function isLoanActiveDuring(loan, intervalStart, intervalEnd) {
+  const start = new Date(loan.startDate + 'T12:00:00');
+  const end = getLoanEndDate(loan);
+  return start < intervalEnd && end > intervalStart;
+}
+

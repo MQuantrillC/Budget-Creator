@@ -1,4 +1,4 @@
-import { Inter } from 'next/font/google';
+import { Fraunces, Libre_Franklin, IBM_Plex_Mono } from 'next/font/google';
 import './globals.css';
 import { BudgetProvider } from '@/context/BudgetContext';
 import { Toaster } from 'react-hot-toast';
@@ -6,7 +6,29 @@ import Footer from '@/components/Footer';
 import AuthProvider from '@/components/AuthProvider';
 import AuthGuard from '@/components/AuthGuard';
 
-const inter = Inter({ subsets: ['latin'] });
+const fraunces = Fraunces({
+  subsets: ['latin'],
+  variable: '--font-fraunces',
+  weight: ['400', '600', '700'],
+});
+
+const libreFranklin = Libre_Franklin({
+  subsets: ['latin'],
+  variable: '--font-libre',
+  weight: ['400', '500', '600', '700'],
+});
+
+const plexMono = IBM_Plex_Mono({
+  subsets: ['latin'],
+  variable: '--font-plex-mono',
+  weight: ['400', '500', '600'],
+});
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#f4eedf',
+};
 
 export const metadata = {
   title: 'Budget Creator',
@@ -30,11 +52,8 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className="dark">
-      <head>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-      </head>
-      <body className={`${inter.className} font-sans transition-colors duration-200`}>
+    <html lang="en" className={`${fraunces.variable} ${libreFranklin.variable} ${plexMono.variable}`}>
+      <body>
         <AuthProvider>
           <BudgetProvider>
             <AuthGuard>
@@ -43,7 +62,18 @@ export default function RootLayout({ children }) {
                   {children}
                 </main>
                 <Footer />
-                <Toaster position="bottom-right" />
+                <Toaster
+                  position="bottom-right"
+                  toastOptions={{
+                    style: {
+                      background: '#faf6ea',
+                      color: '#2b2822',
+                      border: '1px solid #b9ac8c',
+                      fontFamily: 'var(--font-plex-mono)',
+                      fontSize: '13px',
+                    },
+                  }}
+                />
               </div>
             </AuthGuard>
           </BudgetProvider>
@@ -51,4 +81,4 @@ export default function RootLayout({ children }) {
       </body>
     </html>
   );
-} 
+}

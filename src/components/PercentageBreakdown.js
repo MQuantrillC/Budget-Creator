@@ -4,42 +4,25 @@ import { useBudget } from '@/context/BudgetContext';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/Card';
 import { TrendingDown, TrendingUp, PieChart } from 'lucide-react';
 import { getLoanMonthlyPayment } from '@/utils/loanCalculations';
+import { makeConverters, toYearlyAmount, formatMoney } from '@/utils/budgetMath';
 
 export default function PercentageBreakdown() {
   const { costs, income, loans, settings, exchangeRates } = useBudget();
 
-  const convertToBaseCurrency = (amount, currency) => {
-    if (!exchangeRates || currency === settings.baseCurrency) {
-      return amount;
-    }
-    const rate = exchangeRates[currency];
-    return rate ? amount / rate : amount;
-  };
+  const { toBase } = makeConverters(exchangeRates, settings.baseCurrency);
 
-  // Calculate yearly totals for each expense and income
-  const calculateYearlyAmount = (item) => {
-    const baseAmount = convertToBaseCurrency(item.amount, item.currency);
-    switch (item.category) {
-      case 'monthly': return baseAmount * 12;
-      case 'weekly': return baseAmount * 52;
-      case 'biweekly': return baseAmount * 26;
-      case 'semiannually': return baseAmount * 2;
-      case 'yearly': return baseAmount;
-      case 'one-time': return baseAmount;
-      default: return baseAmount;
-    }
-  };
+  const calculateYearlyAmount = (item) =>
+    toYearlyAmount(toBase(item.amount, item.currency), item.category);
 
-  // Calculate yearly amounts for all expenses and income
   const expensesWithYearlyAmounts = costs.map(cost => ({
     ...cost,
     yearlyAmount: calculateYearlyAmount(cost)
   }));
 
-  // Add loan payments as expenses
+  // Loan payments count as expenses
   const loanExpenses = loans.map(loan => {
     const monthlyPayment = getLoanMonthlyPayment(loan);
-    const yearlyAmount = convertToBaseCurrency(monthlyPayment * 12, loan.currency);
+    const yearlyAmount = toBase(monthlyPayment * 12, loan.currency);
     return {
       id: `loan-${loan.id}`,
       description: `${loan.name} (Loan Payment)`,
@@ -56,11 +39,9 @@ export default function PercentageBreakdown() {
     yearlyAmount: calculateYearlyAmount(inc)
   }));
 
-  // Calculate totals
   const totalYearlyExpenses = allExpensesWithYearlyAmounts.reduce((sum, expense) => sum + expense.yearlyAmount, 0);
   const totalYearlyIncome = incomeWithYearlyAmounts.reduce((sum, inc) => sum + inc.yearlyAmount, 0);
 
-  // Calculate percentages and sort by amount (descending)
   const expensePercentages = allExpensesWithYearlyAmounts
     .map(expense => ({
       ...expense,
@@ -77,131 +58,94 @@ export default function PercentageBreakdown() {
 
   if (!exchangeRates) {
     return (
-      <div className="flex justify-center items-center h-32 bg-gray-50 dark:bg-gray-800 rounded-lg">
-        <div className="text-gray-600 dark:text-gray-400">Loading breakdown...</div>
+      <div className="flex justify-center items-center h-32 bg-card-deep rounded">
+        <div className="ledger-label">Loading breakdown…</div>
       </div>
     );
   }
 
+  const breakdownRow = (item, barColor, textColor) => (
+    <div key={item.id} className="space-y-1.5">
+      <div className="flex justify-between items-center">
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-ink text-sm truncate">{item.description}</p>
+          <p className="ledger-figure text-[11px] text-ink-faint uppercase tracking-wide">{item.category}</p>
+        </div>
+        <div className="text-right ml-4">
+          <p className={`ledger-figure text-sm font-semibold ${textColor}`}>
+            {item.percentage.toFixed(1)}%
+          </p>
+          <p className="ledger-figure text-xs text-ink-soft">
+            {formatMoney(item.yearlyAmount, settings.baseCurrency)}
+          </p>
+        </div>
+      </div>
+      <div className="w-full bg-card-deep border border-line rounded-sm h-2 overflow-hidden">
+        <div
+          className={`${barColor} h-full transition-all duration-300`}
+          style={{ width: `${item.percentage}%` }}
+        ></div>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="py-12 px-4 bg-white dark:bg-gray-900">
+    <div className="py-10 px-4">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-3">
-            <div className="p-2 rounded-full bg-purple-900/30">
-              <PieChart className="h-6 w-6 text-purple-400" />
-            </div>
+          <div className="flex flex-col items-center gap-2 mb-2">
+            <PieChart className="h-5 w-5 text-inkblue" />
+            <h2 className="font-display text-3xl font-semibold text-ink">Percentage Breakdown</h2>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3">Percentage Breakdown</h2>
-          <p className="text-base text-gray-600 dark:text-gray-400">Annual expense and income distribution</p>
+          <p className="text-ink-soft">Annual expense and income distribution</p>
         </div>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Expenses Breakdown */}
-          <Card className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center">
-                <TrendingDown className="h-5 w-5 text-red-600 dark:text-red-400 mr-2" />
+          {/* Expenses */}
+          <Card>
+            <CardHeader className="!pb-3">
+              <CardTitle className="!text-xl flex items-center">
+                <TrendingDown className="h-5 w-5 text-debit mr-2" />
                 Expense Distribution
               </CardTitle>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                Total Annual: {new Intl.NumberFormat('en-US', { style: 'currency', currency: settings.baseCurrency }).format(totalYearlyExpenses)}
+              <div className="ledger-figure text-sm text-ink-soft mt-1">
+                Total Annual: {formatMoney(totalYearlyExpenses, settings.baseCurrency)}
               </div>
             </CardHeader>
-            <CardContent className="pt-6">
+            <CardContent>
               {expensePercentages.length > 0 ? (
-                <div className="space-y-3">
-                  {expensePercentages.map((expense) => (
-                    <div key={expense.id} className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-gray-800 dark:text-gray-200 text-sm truncate">
-                            {expense.description}
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
-                            {expense.category}
-                          </p>
-                        </div>
-                        <div className="text-right ml-4">
-                          <p className="font-mono text-sm font-bold text-red-600 dark:text-red-400">
-                            {expense.percentage.toFixed(1)}%
-                          </p>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">
-                            {new Intl.NumberFormat('en-US', { style: 'currency', currency: settings.baseCurrency }).format(expense.yearlyAmount)}
-                          </p>
-                        </div>
-                      </div>
-                      {/* Progress bar */}
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                        <div 
-                          className="bg-red-500 h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${expense.percentage}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  ))}
+                <div className="space-y-4">
+                  {expensePercentages.map((expense) => breakdownRow(expense, 'bg-debit', 'text-debit'))}
                 </div>
               ) : (
                 <div className="text-center py-8">
-                  <div className="p-3 rounded-full bg-gray-100 dark:bg-gray-700 w-12 h-12 mx-auto mb-3 flex items-center justify-center">
-                    <TrendingDown className="h-6 w-6 text-gray-500 dark:text-gray-400" />
-                  </div>
-                  <p className="text-gray-600 dark:text-gray-400">No expenses to analyze.</p>
+                  <TrendingDown className="h-6 w-6 text-ink-faint mx-auto mb-3" />
+                  <p className="text-ink-soft text-sm">No expenses to analyze.</p>
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {/* Income Breakdown */}
-          <Card className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center">
-                <TrendingUp className="h-5 w-5 text-blue-600 dark:text-blue-400 mr-2" />
+          {/* Income */}
+          <Card>
+            <CardHeader className="!pb-3">
+              <CardTitle className="!text-xl flex items-center">
+                <TrendingUp className="h-5 w-5 text-credit-deep mr-2" />
                 Income Distribution
               </CardTitle>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                Total Annual: {new Intl.NumberFormat('en-US', { style: 'currency', currency: settings.baseCurrency }).format(totalYearlyIncome)}
+              <div className="ledger-figure text-sm text-ink-soft mt-1">
+                Total Annual: {formatMoney(totalYearlyIncome, settings.baseCurrency)}
               </div>
             </CardHeader>
-            <CardContent className="pt-6">
+            <CardContent>
               {incomePercentages.length > 0 ? (
-                <div className="space-y-3">
-                  {incomePercentages.map((inc) => (
-                    <div key={inc.id} className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-gray-800 dark:text-gray-200 text-sm truncate">
-                            {inc.description}
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
-                            {inc.category}
-                          </p>
-                        </div>
-                        <div className="text-right ml-4">
-                          <p className="font-mono text-sm font-bold text-blue-600 dark:text-blue-400">
-                            {inc.percentage.toFixed(1)}%
-                          </p>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">
-                            {new Intl.NumberFormat('en-US', { style: 'currency', currency: settings.baseCurrency }).format(inc.yearlyAmount)}
-                          </p>
-                        </div>
-                      </div>
-                      {/* Progress bar */}
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                        <div 
-                          className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${inc.percentage}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  ))}
+                <div className="space-y-4">
+                  {incomePercentages.map((inc) => breakdownRow(inc, 'bg-credit', 'text-credit-deep'))}
                 </div>
               ) : (
                 <div className="text-center py-8">
-                  <div className="p-3 rounded-full bg-gray-100 dark:bg-gray-700 w-12 h-12 mx-auto mb-3 flex items-center justify-center">
-                    <TrendingUp className="h-6 w-6 text-gray-500 dark:text-gray-400" />
-                  </div>
-                  <p className="text-gray-600 dark:text-gray-400">No income to analyze.</p>
+                  <TrendingUp className="h-6 w-6 text-ink-faint mx-auto mb-3" />
+                  <p className="text-ink-soft text-sm">No income to analyze.</p>
                 </div>
               )}
             </CardContent>

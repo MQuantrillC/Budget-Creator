@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { X, Mail, Lock, User, UserPlus, ArrowLeft } from 'lucide-react';
+import { X, Mail, Lock, User, UserPlus, ArrowLeft, BookOpen } from 'lucide-react';
 import { useAuth } from './AuthProvider';
+import toast from 'react-hot-toast';
 
 export default function AuthModal() {
   const { signInWithPassword, signUp, signInWithOAuth, setIsGuest, hideAuthModal } = useAuth();
@@ -29,19 +30,15 @@ export default function AuthModal() {
 
     setIsLoading(true);
     setError('');
-    
-    const { error } = await signInWithPassword({ 
-      email, 
-      password 
-    });
-    
+
+    const { error } = await signInWithPassword({ email, password });
+
     if (error) {
       setError(error.message);
     } else {
-      // No need for onClose, session change will hide modal
       if (hideAuthModal) hideAuthModal();
     }
-    
+
     setIsLoading(false);
   }
 
@@ -68,9 +65,9 @@ export default function AuthModal() {
 
     setIsLoading(true);
     setError('');
-    
-    const { error } = await signUp({ 
-      email, 
+
+    const { error } = await signUp({
+      email,
       password,
       options: {
         data: {
@@ -80,10 +77,9 @@ export default function AuthModal() {
         }
       }
     });
-    
+
     if (error) {
-      // Handle specific error cases with user-friendly messages
-      if (error.message.includes('User already registered') || 
+      if (error.message.includes('User already registered') ||
           error.message.includes('already been registered') ||
           error.message.includes('already exists')) {
         setError('There is already an account registered with this email');
@@ -92,10 +88,10 @@ export default function AuthModal() {
       }
     } else {
       setError('');
-      alert('Check your email to confirm your account!');
+      toast.success('Check your email to confirm your account!', { duration: 6000 });
       setMode('welcome');
     }
-    
+
     setIsLoading(false);
   }
 
@@ -105,7 +101,6 @@ export default function AuthModal() {
       return;
     }
 
-    // Check if we're in the browser
     if (typeof window === 'undefined') {
       setError('Google authentication is not available on server');
       return;
@@ -113,7 +108,7 @@ export default function AuthModal() {
 
     setIsLoading(true);
     setError('');
-    
+
     try {
       const { data, error } = await signInWithOAuth({
         provider: 'google',
@@ -125,13 +120,11 @@ export default function AuthModal() {
           }
         }
       });
-      
+
       if (error) {
-        console.error('Google OAuth error:', error);
         setError(error.message);
         setIsLoading(false);
       } else if (data?.url) {
-        // Redirect to Google OAuth
         window.location.href = data.url;
       } else {
         setError('Failed to get Google authentication URL');
@@ -153,36 +146,47 @@ export default function AuthModal() {
     setError('');
   };
 
+  const continueAsGuest = () => {
+    setIsGuest(true);
+    if (hideAuthModal) hideAuthModal();
+  };
+
+  const errorBanner = error && (
+    <div className="mb-4 p-3 bg-debit-pale border border-debit/40 rounded text-debit text-sm">
+      {error}
+    </div>
+  );
+
+  const fieldLabel = (text) => (
+    <label className="ledger-label block mb-1.5">{text}</label>
+  );
+
   const renderWelcomeScreen = () => (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md mx-auto transform transition-all">
-      {/* Header */}
-      <div className="relative p-8 pb-6">
+    <div className="ledger-card w-full max-w-md mx-auto overflow-hidden">
+      <div className="relative border-b-2 border-ink bg-card-deep px-8 py-6">
         <button
-          onClick={() => {
-            setIsGuest(true);
-            if (hideAuthModal) hideAuthModal();
-          }}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+          onClick={continueAsGuest}
+          className="absolute top-4 right-4 text-ink-faint hover:text-ink transition-colors"
         >
           <X className="h-5 w-5" />
         </button>
-        
+
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-            Welcome to Budget Creator
+          <BookOpen className="h-6 w-6 text-credit-deep mx-auto mb-2" />
+          <h1 className="font-display text-2xl font-semibold text-ink mb-1">
+            Budget Creator
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 text-sm">
-            Feel free to Log In to save your budgeting information.
+          <p className="text-ink-soft text-sm">
+            Log in to keep your ledger saved.
           </p>
         </div>
       </div>
 
-      {/* Welcome Options */}
-      <div className="px-8 pb-8">
+      <div className="px-8 py-6">
         <div className="space-y-3">
           <button
             onClick={() => { resetForm(); setMode('login'); }}
-            className="w-full flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            className="btn btn-ink w-full"
           >
             <User className="h-4 w-4" />
             <span>Log In</span>
@@ -190,25 +194,20 @@ export default function AuthModal() {
 
           <button
             onClick={() => { resetForm(); setMode('signup'); }}
-            className="w-full flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+            className="btn btn-primary w-full"
           >
             <UserPlus className="h-4 w-4" />
             <span>Sign Up</span>
           </button>
 
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200 dark:border-gray-600"></div>
-            </div>
-            <div className="relative flex justify-center">
-              <span className="bg-white dark:bg-gray-800 px-3 text-sm text-gray-500 dark:text-gray-400">or</span>
-            </div>
+          <div className="ornament-rule">
+            <span className="ledger-label">or</span>
           </div>
 
           <button
             onClick={handleGoogleSignUp}
             disabled={isLoading}
-            className="w-full flex items-center justify-center space-x-2 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 font-medium py-3 px-4 rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+            className="btn btn-secondary w-full !normal-case !tracking-normal !font-body"
           >
             <svg className="h-4 w-4" viewBox="0 0 24 24">
               <path fill="#4285f4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -216,19 +215,19 @@ export default function AuthModal() {
               <path fill="#fbbc05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
               <path fill="#ea4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
-            <span>{isLoading ? 'Connecting...' : 'Continue with Google'}</span>
+            <span>{isLoading ? 'Connecting…' : 'Continue with Google'}</span>
           </button>
 
           <button
-            onClick={() => setIsGuest(true)}
-            className="w-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium py-3 px-4 rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+            onClick={continueAsGuest}
+            className="btn btn-secondary w-full"
           >
             Continue as Guest
           </button>
         </div>
 
         <div className="mt-6 text-center">
-          <p className="text-xs text-gray-500 dark:text-gray-400">
+          <p className="text-xs text-ink-faint">
             By continuing, you agree to our terms of service
           </p>
         </div>
@@ -237,54 +236,43 @@ export default function AuthModal() {
   );
 
   const renderLoginScreen = () => (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md mx-auto transform transition-all">
-      {/* Header */}
-      <div className="relative p-8 pb-6">
+    <div className="ledger-card w-full max-w-md mx-auto overflow-hidden">
+      <div className="relative border-b-2 border-ink bg-card-deep px-8 py-6">
         <button
           onClick={() => setMode('welcome')}
-          className="absolute top-4 left-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+          className="absolute top-4 left-4 text-ink-faint hover:text-ink transition-colors"
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
         <button
-          onClick={() => {
-            setIsGuest(true);
-            if (hideAuthModal) hideAuthModal();
-          }}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+          onClick={continueAsGuest}
+          className="absolute top-4 right-4 text-ink-faint hover:text-ink transition-colors"
         >
           <X className="h-5 w-5" />
         </button>
-        
+
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+          <h1 className="font-display text-2xl font-semibold text-ink mb-1">
             Welcome Back
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 text-sm">
+          <p className="text-ink-soft text-sm">
             Sign in to your account
           </p>
         </div>
       </div>
 
-      {/* Login Form */}
-      <div className="px-8 pb-8">
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-sm">
-            {error}
-          </div>
-        )}
+      <div className="px-8 py-6">
+        {errorBanner}
 
         <div className="space-y-4">
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Email
-            </label>
+          <div>
+            {fieldLabel('Email')}
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-faint" />
               <input
                 type="email"
                 placeholder="Enter your email"
-                className="w-full pl-10 pr-4 py-3 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 transition-all duration-200 placeholder-gray-400 dark:placeholder-gray-500 text-gray-900 dark:text-gray-100"
+                className="ledger-input !pl-10"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isLoading}
@@ -292,40 +280,37 @@ export default function AuthModal() {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Password
-            </label>
+          <div>
+            {fieldLabel('Password')}
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-faint" />
               <input
                 type="password"
                 placeholder="Enter your password"
-                className="w-full pl-10 pr-4 py-3 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 transition-all duration-200 placeholder-gray-400 dark:placeholder-gray-500 text-gray-900 dark:text-gray-100"
+                className="ledger-input !pl-10"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
-                onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+                onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
               />
             </div>
           </div>
         </div>
 
-        {/* Action Buttons */}
         <div className="mt-6 space-y-3">
           <button
             onClick={handleLogin}
             disabled={isLoading}
-            className="w-full flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            className="btn btn-ink w-full disabled:opacity-60"
           >
             <User className="h-4 w-4" />
-            <span>{isLoading ? 'Signing In...' : 'Log In'}</span>
+            <span>{isLoading ? 'Signing In…' : 'Log In'}</span>
           </button>
 
           <div className="text-center">
             <button
               onClick={() => { resetForm(); setMode('signup'); }}
-              className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+              className="text-sm text-credit-deep hover:text-credit underline underline-offset-2"
             >
               Don&apos;t have an account? Sign up
             </button>
@@ -336,67 +321,53 @@ export default function AuthModal() {
   );
 
   const renderSignupScreen = () => (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md mx-auto transform transition-all">
-      {/* Header */}
-      <div className="relative p-8 pb-6">
+    <div className="ledger-card w-full max-w-md mx-auto overflow-hidden">
+      <div className="relative border-b-2 border-ink bg-card-deep px-8 py-6">
         <button
           onClick={() => setMode('welcome')}
-          className="absolute top-4 left-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+          className="absolute top-4 left-4 text-ink-faint hover:text-ink transition-colors"
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
         <button
-          onClick={() => {
-            setIsGuest(true);
-            if (hideAuthModal) hideAuthModal();
-          }}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+          onClick={continueAsGuest}
+          className="absolute top-4 right-4 text-ink-faint hover:text-ink transition-colors"
         >
           <X className="h-5 w-5" />
         </button>
-        
+
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+          <h1 className="font-display text-2xl font-semibold text-ink mb-1">
             Create Account
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 text-sm">
+          <p className="text-ink-soft text-sm">
             Join Budget Creator to save your financial data
           </p>
         </div>
       </div>
 
-      {/* Signup Form */}
-      <div className="px-8 pb-8">
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-sm">
-            {error}
-          </div>
-        )}
+      <div className="px-8 py-6">
+        {errorBanner}
 
         <div className="space-y-4">
-          {/* Name Fields */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                First Name
-              </label>
+            <div>
+              {fieldLabel('First Name')}
               <input
                 type="text"
                 placeholder="John"
-                className="w-full px-3 py-3 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 transition-all duration-200 placeholder-gray-400 dark:placeholder-gray-500 text-gray-900 dark:text-gray-100"
+                className="ledger-input"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 disabled={isLoading}
               />
             </div>
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Last Name
-              </label>
+            <div>
+              {fieldLabel('Last Name')}
               <input
                 type="text"
                 placeholder="Doe"
-                className="w-full px-3 py-3 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 transition-all duration-200 placeholder-gray-400 dark:placeholder-gray-500 text-gray-900 dark:text-gray-100"
+                className="ledger-input"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 disabled={isLoading}
@@ -404,16 +375,14 @@ export default function AuthModal() {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Email
-            </label>
+          <div>
+            {fieldLabel('Email')}
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-faint" />
               <input
                 type="email"
                 placeholder="john.doe@example.com"
-                className="w-full pl-10 pr-4 py-3 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 transition-all duration-200 placeholder-gray-400 dark:placeholder-gray-500 text-gray-900 dark:text-gray-100"
+                className="ledger-input !pl-10"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isLoading}
@@ -421,16 +390,14 @@ export default function AuthModal() {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Password
-            </label>
+          <div>
+            {fieldLabel('Password')}
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-faint" />
               <input
                 type="password"
                 placeholder="At least 6 characters"
-                className="w-full pl-10 pr-4 py-3 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 transition-all duration-200 placeholder-gray-400 dark:placeholder-gray-500 text-gray-900 dark:text-gray-100"
+                className="ledger-input !pl-10"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
@@ -438,40 +405,37 @@ export default function AuthModal() {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Confirm Password
-            </label>
+          <div>
+            {fieldLabel('Confirm Password')}
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-faint" />
               <input
                 type="password"
                 placeholder="Confirm your password"
-                className="w-full pl-10 pr-4 py-3 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 transition-all duration-200 placeholder-gray-400 dark:placeholder-gray-500 text-gray-900 dark:text-gray-100"
+                className="ledger-input !pl-10"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 disabled={isLoading}
-                onKeyPress={(e) => e.key === 'Enter' && handleSignup()}
+                onKeyDown={(e) => e.key === 'Enter' && handleSignup()}
               />
             </div>
           </div>
         </div>
 
-        {/* Action Buttons */}
         <div className="mt-6 space-y-3">
           <button
             onClick={handleSignup}
             disabled={isLoading}
-            className="w-full flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+            className="btn btn-primary w-full disabled:opacity-60"
           >
             <UserPlus className="h-4 w-4" />
-            <span>{isLoading ? 'Creating Account...' : 'Create Account'}</span>
+            <span>{isLoading ? 'Creating Account…' : 'Create Account'}</span>
           </button>
 
           <div className="text-center">
             <button
               onClick={() => { resetForm(); setMode('login'); }}
-              className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+              className="text-sm text-credit-deep hover:text-credit underline underline-offset-2"
             >
               Already have an account? Log in
             </button>
@@ -482,7 +446,7 @@ export default function AuthModal() {
   );
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50 p-4">
+    <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50 p-4 overflow-y-auto">
       {mode === 'welcome' && renderWelcomeScreen()}
       {mode === 'login' && renderLoginScreen()}
       {mode === 'signup' && renderSignupScreen()}

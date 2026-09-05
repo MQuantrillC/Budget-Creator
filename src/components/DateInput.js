@@ -134,30 +134,30 @@ export default function DateInput({ value, onChange, className = "", placeholder
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           maxLength={10} // DD/MM/YYYY = 10 characters
-          className={`w-full px-3 py-2 pr-10 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 transition-all duration-200 placeholder-gray-400 dark:placeholder-gray-500 text-gray-900 dark:text-gray-100 ${className}`}
+          className={`ledger-input ledger-figure !pr-10 ${className}`}
         />
         <button
           type="button"
           onClick={handleCalendarClick}
-          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-ink-faint hover:text-ink transition-colors rounded focus:outline-none focus:ring-2 focus:ring-credit"
           tabIndex={-1}
         >
           <Calendar className="h-4 w-4" />
         </button>
       </div>
-      
+
       {showPicker && (
-        <div 
+        <div
           ref={pickerRef}
-          className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-50 p-3"
+          className="absolute top-full left-0 mt-1 ledger-card z-50 p-3"
         >
           <input
             type="date"
             value={pickerValue}
             onChange={handlePickerChange}
-            className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 text-gray-900 dark:text-gray-100"
+            className="ledger-input"
           />
-          <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center">
+          <div className="mt-2 text-xs text-ink-faint text-center">
             Select a date from the calendar above
           </div>
         </div>

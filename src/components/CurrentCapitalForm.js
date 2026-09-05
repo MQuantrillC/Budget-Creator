@@ -3,26 +3,27 @@
 import { useState, useEffect } from 'react';
 import { useBudget } from '@/context/BudgetContext';
 import { Banknote } from 'lucide-react';
+import { formatMoney } from '@/utils/budgetMath';
 
 // Format number with commas
 const formatNumberWithCommas = (num) => {
   if (num === '' || num === null || num === undefined) return '';
   const number = parseFloat(num);
   if (isNaN(number)) return '';
-  return new Intl.NumberFormat('en-US', { 
-    minimumFractionDigits: 0, 
-    maximumFractionDigits: 2 
+  return new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
   }).format(number);
 };
 
 export default function CurrentCapitalForm() {
-  const { 
-    currentCapital, 
-    setCapital, 
-    settings, 
-    startingCapitalCurrency, 
-    setStartingCapitalCurrency, 
-    exchangeRates 
+  const {
+    currentCapital,
+    setCapital,
+    settings,
+    startingCapitalCurrency,
+    setStartingCapitalCurrency,
+    exchangeRates
   } = useBudget();
   const [amount, setAmount] = useState(currentCapital.toString());
   const [displayAmount, setDisplayAmount] = useState(formatNumberWithCommas(currentCapital));
@@ -36,11 +37,11 @@ export default function CurrentCapitalForm() {
     const inputValue = e.target.value;
     // Remove all non-digit characters except decimal point
     const cleanValue = inputValue.replace(/[^0-9.]/g, '');
-    
+
     // Prevent multiple decimal points
     const parts = cleanValue.split('.');
     const formattedCleanValue = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : cleanValue;
-    
+
     setAmount(formattedCleanValue);
     setDisplayAmount(formatNumberWithCommas(formattedCleanValue));
   };
@@ -69,17 +70,16 @@ export default function CurrentCapitalForm() {
     const rate = exchangeRates[startingCapitalCurrency];
     if (!rate) return null;
     const converted = parseFloat(amount) / rate;
-    return `≈ ${new Intl.NumberFormat('en-US', { style: 'currency', currency: settings.baseCurrency }).format(converted)}`;
+    return `≈ ${formatMoney(converted, settings.baseCurrency)}`;
   };
 
   return (
-    <div className="max-w-md mx-auto space-y-4">
-      {/* Amount and Currency Row */}
-      <div className="grid grid-cols-2 gap-4">
-        {/* Amount Input */}
+    <div className="max-w-md mx-auto space-y-3">
+      <div className="grid grid-cols-2 gap-3">
+        {/* Amount */}
         <div className="relative">
-          <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-            <Banknote className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+            <Banknote className="h-5 w-5 text-ink-faint" />
           </div>
           <input
             id="current-capital"
@@ -88,40 +88,32 @@ export default function CurrentCapitalForm() {
             onChange={handleChange}
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
-            className="w-full pl-10 pr-4 py-3 text-xl font-semibold text-center bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 transition-all duration-200 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100"
+            className="ledger-input ledger-figure !pl-10 !py-3 !text-xl font-semibold text-center"
             placeholder="0"
           />
         </div>
 
-        {/* Currency Selection */}
-        <div className="relative">
-          <select
-            value={startingCapitalCurrency}
-            onChange={(e) => setStartingCapitalCurrency(e.target.value)}
-            className="w-full py-3 px-4 text-center bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 transition-all duration-200 appearance-none font-medium text-gray-700 dark:text-gray-300"
-          >
-            {settings.availableCurrencies.map((c) => (
-              <option key={c.code} value={c.code}>
-                {c.code} - {c.name}
-              </option>
-            ))}
-          </select>
-          <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-            <svg className="h-5 w-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </div>
-        </div>
+        {/* Currency */}
+        <select
+          value={startingCapitalCurrency}
+          onChange={(e) => setStartingCapitalCurrency(e.target.value)}
+          className="ledger-input !py-3 text-center font-medium"
+        >
+          {settings.availableCurrencies.map((c) => (
+            <option key={c.code} value={c.code}>
+              {c.code} - {c.name}
+            </option>
+          ))}
+        </select>
       </div>
 
-      {/* Conversion Display */}
       {convertedAmount() && (
         <div className="text-center">
-          <p className="text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2 inline-block">
+          <p className="ledger-figure text-sm text-ink-soft bg-card-deep border border-line rounded px-3 py-1.5 inline-block">
             {convertedAmount()} in {settings.baseCurrency}
           </p>
         </div>
       )}
     </div>
   );
-} 
+}

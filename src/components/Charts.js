@@ -4,38 +4,45 @@ import { useMemo, useState, useCallback } from 'react';
 import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Line, BarChart, Bar } from 'recharts';
 import { useBudget } from '@/context/BudgetContext';
 import { addMonths, format } from 'date-fns';
-import { getLoanMonthlyPayment } from '@/utils/loanCalculations';
+import { getLoanMonthlyPayment, isLoanActiveDuring } from '@/utils/loanCalculations';
+import { formatMoney } from '@/utils/budgetMath';
+
+const CHART_COLORS = {
+  capital: '#2e6b4e',   // credit green
+  income: '#2e6b4e',
+  costs: '#a03d2c',     // debit red
+};
 
 const CustomTooltip = ({ active, payload, label, currency }) => {
     if (active && payload && payload.length) {
       return (
-        <div className="p-3 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
-          <p className="label font-bold text-gray-900 dark:text-gray-100">{`${label}`}</p>
+        <div className="p-3 ledger-card">
+          <p className="ledger-label mb-1">{`${label}`}</p>
           {payload.map((pld, index) => (
-            <p key={`${pld.dataKey}-${index}`} style={{ color: pld.color }} className="text-sm text-gray-700 dark:text-gray-300">
-              {`${pld.name}: ${new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(pld.value)}`}
+            <p key={`${pld.dataKey}-${index}`} style={{ color: pld.color }} className="ledger-figure text-sm">
+              {`${pld.name}: ${formatMoney(pld.value, currency)}`}
             </p>
           ))}
         </div>
       );
     }
-  
+
     return null;
 };
 
 export default function Charts() {
-    const { 
-        costs, 
-        income, 
+    const {
+        costs,
+        income,
         loans,
-        currentCapital, 
-        settings, 
-        exchangeRates, 
-        startDate, 
+        currentCapital,
+        settings,
+        exchangeRates,
+        startDate,
         timeframe,
-        projectionDisplayCurrency, 
+        projectionDisplayCurrency,
         setProjectionDisplayCurrency,
-        startingCapitalCurrency 
+        startingCapitalCurrency
     } = useBudget();
 
     const [selectedCategory, setSelectedCategory] = useState('all');
@@ -48,11 +55,9 @@ export default function Charts() {
 
     const convertToDisplayCurrency = useCallback((amount, fromCurrency) => {
         if (!exchangeRates || fromCurrency === projectionDisplayCurrency) return amount;
-        
-        // First convert to base currency
+
         const baseAmount = convertToBaseCurrency(amount, fromCurrency);
-        
-        // Then convert to display currency
+
         if (projectionDisplayCurrency === settings.baseCurrency) return baseAmount;
         const displayRate = exchangeRates[projectionDisplayCurrency];
         return displayRate ? baseAmount * displayRate : baseAmount;
@@ -68,14 +73,13 @@ export default function Charts() {
         }
     }, [timeframe]);
 
-    // Get all unique categories from costs and income
+    // All unique categories from costs and income
     const allCategories = useMemo(() => {
         const costCategories = costs.map(cost => cost.description);
         const incomeCategories = income.map(inc => inc.description);
         return [...new Set([...costCategories, ...incomeCategories])].sort();
     }, [costs, income]);
 
-    // Filter costs and income based on selected category
     const filteredCosts = useMemo(() => {
         if (selectedCategory === 'all') return costs;
         return costs.filter(cost => cost.description === selectedCategory);
@@ -87,11 +91,11 @@ export default function Charts() {
     }, [income, selectedCategory]);
 
     const projectionData = useMemo(() => {
-        // Convert starting capital to display currency
+        // Starting capital in display currency
         const startingCapitalInBase = convertToBaseCurrency(currentCapital, startingCapitalCurrency);
         const startingCapitalInDisplay = convertToDisplayCurrency(startingCapitalInBase, settings.baseCurrency);
         let runningCapital = startingCapitalInDisplay;
-        
+
         const sDate = new Date(startDate + 'T12:00:00'); // Parse as local time to avoid timezone issues
         const periods = getTimeframePeriods();
 
@@ -102,34 +106,24 @@ export default function Charts() {
             let monthlyCosts = filteredCosts.reduce((acc, cost) => {
                 const costAmount = convertToDisplayCurrency(cost.amount, cost.currency);
                 if (cost.category === 'monthly') return acc + costAmount;
-                if (cost.category === 'weekly') return acc + costAmount * 4.33;
-                if (cost.category === 'biweekly') return acc + costAmount * 2.17; // Biweekly = 2.17 times per month
-                if (cost.category === 'semiannually') return acc + costAmount / 6; // Semiannually = 1/6 per month
+                if (cost.category === 'weekly') return acc + costAmount * (52 / 12);
+                if (cost.category === 'biweekly') return acc + costAmount * (26 / 12);
+                if (cost.category === 'semiannually') return acc + costAmount / 6;
                 if (cost.category === 'yearly') return acc + costAmount / 12;
                 if (cost.category === 'one-time' && cost.date && cost.date.trim() !== '') {
-                    const costDate = new Date(cost.date + 'T12:00:00'); // Add time to avoid timezone issues
-                    const intervalStart = new Date(interval.start);
-                    const intervalEnd = new Date(interval.end);
-                    
-                    // For one-time expenses, check if the date falls within the current period
-                    // Use explicit date comparison: date >= start AND date < end
-                    if (costDate >= intervalStart && costDate < intervalEnd) {
+                    const costDate = new Date(cost.date + 'T12:00:00');
+                    if (costDate >= interval.start && costDate < interval.end) {
                         return acc + costAmount;
                     }
                 }
                 return acc;
             }, 0);
 
-            // Add loan payments to monthly costs
+            // Loan payments only while the loan is still being repaid
             const monthlyLoanPayments = loans.reduce((acc, loan) => {
-                const loanStartDate = new Date(loan.startDate + 'T12:00:00');
-                const intervalEnd = new Date(interval.end);
-                
-                // Check if loan is active during this period
-                if (loanStartDate < intervalEnd) {
+                if (isLoanActiveDuring(loan, interval.start, interval.end)) {
                     const monthlyPayment = getLoanMonthlyPayment(loan);
-                    const loanPaymentInDisplay = convertToDisplayCurrency(monthlyPayment, loan.currency);
-                    return acc + loanPaymentInDisplay;
+                    return acc + convertToDisplayCurrency(monthlyPayment, loan.currency);
                 }
                 return acc;
             }, 0);
@@ -139,18 +133,13 @@ export default function Charts() {
             let monthlyIncome = filteredIncome.reduce((acc, inc) => {
                 const incomeAmount = convertToDisplayCurrency(inc.amount, inc.currency);
                 if (inc.category === 'monthly') return acc + incomeAmount;
-                if (inc.category === 'weekly') return acc + incomeAmount * 4.33;
-                if (inc.category === 'biweekly') return acc + incomeAmount * 2.17; // Biweekly = 2.17 times per month
-                if (inc.category === 'semiannually') return acc + incomeAmount / 6; // Semiannually = 1/6 per month
+                if (inc.category === 'weekly') return acc + incomeAmount * (52 / 12);
+                if (inc.category === 'biweekly') return acc + incomeAmount * (26 / 12);
+                if (inc.category === 'semiannually') return acc + incomeAmount / 6;
                 if (inc.category === 'yearly') return acc + incomeAmount / 12;
                 if (inc.category === 'one-time' && inc.date && inc.date.trim() !== '') {
-                    const incomeDate = new Date(inc.date + 'T12:00:00'); // Add time to avoid timezone issues
-                    const intervalStart = new Date(interval.start);
-                    const intervalEnd = new Date(interval.end);
-                    
-                    // For one-time income, check if the date falls within the current period
-                    // Use explicit date comparison: date >= start AND date < end
-                    if (incomeDate >= intervalStart && incomeDate < intervalEnd) {
+                    const incomeDate = new Date(inc.date + 'T12:00:00');
+                    if (incomeDate >= interval.start && incomeDate < interval.end) {
                         return acc + incomeAmount;
                     }
                 }
@@ -171,22 +160,22 @@ export default function Charts() {
 
     if (!exchangeRates) {
         return (
-            <div className="flex justify-center items-center h-64 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <div className="text-gray-600 dark:text-gray-400">Loading charts...</div>
+            <div className="flex justify-center items-center h-64 bg-card-deep rounded">
+                <div className="ledger-label">Loading charts…</div>
             </div>
         );
     }
 
     return (
         <div className="space-y-8">
-            {/* Currency and Category Selection */}
-            <div className="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-8 mb-6">
+            {/* Currency and category selection */}
+            <div className="flex flex-wrap justify-center items-center gap-4 sm:gap-x-8 mb-6">
                 <div className="flex items-center space-x-3">
-                    <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Display Currency:</p>
+                    <p className="ledger-label">Display Currency</p>
                     <select
                         value={projectionDisplayCurrency}
                         onChange={(e) => setProjectionDisplayCurrency(e.target.value)}
-                        className="px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg appearance-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 font-medium text-gray-900 dark:text-gray-100"
+                        className="ledger-input !w-auto"
                     >
                         {settings.availableCurrencies.map(c => (
                             <option key={c.code} value={c.code}>{c.code} - {c.name}</option>
@@ -195,11 +184,11 @@ export default function Charts() {
                 </div>
 
                 <div className="flex items-center space-x-3">
-                    <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Category Filter:</p>
+                    <p className="ledger-label">Category Filter</p>
                     <select
                         value={selectedCategory}
                         onChange={(e) => setSelectedCategory(e.target.value)}
-                        className="px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg appearance-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 font-medium text-gray-900 dark:text-gray-100"
+                        className="ledger-input !w-auto"
                     >
                         <option value="all">All Categories</option>
                         {allCategories.map(category => (
@@ -214,9 +203,9 @@ export default function Charts() {
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
                     <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} stroke="var(--text-secondary)" />
                     <YAxis fontSize={12} tickLine={false} axisLine={false} stroke="var(--text-secondary)" tickFormatter={(value) => new Intl.NumberFormat('en-US', { notation: 'compact', compactDisplay: 'short' }).format(value)} />
-                    <Tooltip content={<CustomTooltip currency={projectionDisplayCurrency} />} cursor={{ fill: 'rgba(52, 211, 153, 0.1)' }}/>
-                    <Legend wrapperStyle={{ fontSize: "14px", color: "var(--text-secondary)" }} />
-                    <Line type="monotone" dataKey="Capital" stroke="var(--color-green-500)" strokeWidth={2} activeDot={{ r: 8, fill: 'var(--color-green-500)' }} dot={{ r: 3, fill: 'var(--color-green-500)' }} />
+                    <Tooltip content={<CustomTooltip currency={projectionDisplayCurrency} />} cursor={{ fill: 'rgba(46, 107, 78, 0.08)' }}/>
+                    <Legend wrapperStyle={{ fontSize: "13px", color: "var(--text-secondary)", fontFamily: 'var(--font-plex-mono)' }} />
+                    <Line type="monotone" dataKey="Capital" stroke={CHART_COLORS.capital} strokeWidth={2} activeDot={{ r: 7, fill: CHART_COLORS.capital }} dot={{ r: 3, fill: CHART_COLORS.capital }} />
                 </LineChart>
             </ResponsiveContainer>
             <ResponsiveContainer width="100%" height={300}>
@@ -224,12 +213,12 @@ export default function Charts() {
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
                     <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} stroke="var(--text-secondary)" />
                     <YAxis fontSize={12} tickLine={false} axisLine={false} stroke="var(--text-secondary)" tickFormatter={(value) => new Intl.NumberFormat('en-US', { notation: 'compact', compactDisplay: 'short' }).format(value)} />
-                    <Tooltip content={<CustomTooltip currency={projectionDisplayCurrency} />} cursor={{ fill: 'rgba(52, 211, 153, 0.1)' }}/>
-                    <Legend wrapperStyle={{ fontSize: "14px", color: "var(--text-secondary)" }} />
-                    <Bar dataKey="Costs" fill="#ef4444" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="Income" fill="var(--color-green-500)" radius={[4, 4, 0, 0]} />
+                    <Tooltip content={<CustomTooltip currency={projectionDisplayCurrency} />} cursor={{ fill: 'rgba(46, 107, 78, 0.08)' }}/>
+                    <Legend wrapperStyle={{ fontSize: "13px", color: "var(--text-secondary)", fontFamily: 'var(--font-plex-mono)' }} />
+                    <Bar dataKey="Costs" fill={CHART_COLORS.costs} radius={[2, 2, 0, 0]} />
+                    <Bar dataKey="Income" fill={CHART_COLORS.income} radius={[2, 2, 0, 0]} />
                 </BarChart>
             </ResponsiveContainer>
         </div>
     );
-} 
+}

@@ -3,37 +3,36 @@
 import { useState, useMemo } from 'react';
 import { useBudget } from '@/context/BudgetContext';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/Card';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import { CreditCard, Calendar, X, ChevronDown, ChevronUp } from 'lucide-react';
-import { 
-  generateAmortizationSchedule, 
-  getLoanMonthlyPayment, 
+import {
+  generateAmortizationSchedule,
+  getLoanMonthlyPayment,
   calculateTotalInterest,
-  getCurrentLoanBalance 
+  getCurrentLoanBalance
 } from '@/utils/loanCalculations';
 
 function LoanCard({ loan, onDelete }) {
   const [showSchedule, setShowSchedule] = useState(false);
-  
+
   const monthlyPayment = getLoanMonthlyPayment(loan);
   const totalInterest = calculateTotalInterest(loan.principal, loan.interestRate / 100, loan.termMonths);
   const currentBalance = getCurrentLoanBalance(loan, new Date().toISOString().split('T')[0]);
   const schedule = generateAmortizationSchedule(loan.principal, loan.interestRate / 100, loan.termMonths, loan.startDate);
-  
-
 
   const formatCurrency = (amount, currency = loan.currency) => {
-    return new Intl.NumberFormat('en-US', { 
-      style: 'currency', 
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
       currency,
-      minimumFractionDigits: 2 
+      minimumFractionDigits: 2
     }).format(amount);
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
     });
   };
 
@@ -43,118 +42,105 @@ function LoanCard({ loan, onDelete }) {
     return schedule.filter(payment => {
       const paymentDate = new Date(payment.date);
       const monthsFromNow = (paymentDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24 * 30);
-      return monthsFromNow >= -1 && monthsFromNow <= 12; // Include past month and next 12 months
+      return monthsFromNow >= -1 && monthsFromNow <= 12;
     }).slice(0, 12);
   }, [schedule]);
 
+  const statBox = (label, value, valueClass = 'text-ink') => (
+    <div className="text-center p-3 bg-card-deep border border-line rounded">
+      <p className="ledger-label !text-[10px] mb-1">{label}</p>
+      <p className={`ledger-figure font-semibold text-sm ${valueClass}`}>{value}</p>
+    </div>
+  );
+
   return (
-    <Card className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700">
-      <CardHeader className="pb-4">
+    <Card>
+      <CardHeader className="!pb-4">
         <div className="flex justify-between items-start">
           <div className="flex items-center space-x-3">
-            <div className="p-2 rounded-full bg-orange-100 dark:bg-orange-900/30">
-              <CreditCard className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+            <div className="p-2 rounded bg-gold-pale border border-gold/40">
+              <CreditCard className="h-5 w-5 text-gold" />
             </div>
             <div>
-              <CardTitle className="text-xl font-bold text-gray-900 dark:text-gray-100">
+              <CardTitle className="!text-xl">
                 {loan.name}
               </CardTitle>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {loan.interestRate}% APR • {loan.termMonths} months
+              <p className="ledger-figure text-xs text-ink-soft mt-0.5">
+                {loan.interestRate}% APR · {loan.termMonths} months
               </p>
             </div>
           </div>
           <button
             onClick={() => onDelete(loan.id)}
-            className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
+            className="p-1 text-ink-faint hover:text-debit hover:bg-debit-pale rounded transition-colors"
             title="Delete loan"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
       </CardHeader>
-      
-      <CardContent className="pt-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Monthly Payment</p>
-            <p className="font-bold text-orange-600 dark:text-orange-400">
-              {formatCurrency(monthlyPayment)}
-            </p>
-          </div>
-          <div className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Current Balance</p>
-            <p className="font-bold text-gray-900 dark:text-gray-100">
-              {formatCurrency(currentBalance)}
-            </p>
-          </div>
-          <div className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Total Interest</p>
-            <p className="font-bold text-red-600 dark:text-red-400">
-              {formatCurrency(totalInterest)}
-            </p>
-          </div>
-          <div className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Start Date</p>
-            <p className="font-bold text-gray-900 dark:text-gray-100 text-xs">
-              {formatDate(loan.startDate)}
-            </p>
-          </div>
+
+      <CardContent>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          {statBox('Monthly Payment', formatCurrency(monthlyPayment), 'text-gold')}
+          {statBox('Current Balance', formatCurrency(currentBalance))}
+          {statBox('Total Interest', formatCurrency(totalInterest), 'text-debit')}
+          {statBox('Start Date', formatDate(loan.startDate))}
         </div>
 
         {loan.notes && (
-          <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-            <p className="text-sm text-blue-700 dark:text-blue-300 italic">
+          <div className="mb-4 p-3 bg-inkblue-pale border border-inkblue/30 rounded">
+            <p className="text-sm text-inkblue italic">
               &ldquo;{loan.notes}&rdquo;
             </p>
           </div>
         )}
 
-        <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
+        <div className="border-t border-line pt-4">
           <button
             onClick={() => setShowSchedule(!showSchedule)}
-            className="flex items-center justify-between w-full p-3 text-left bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+            className="flex items-center justify-between w-full p-3 text-left bg-card-deep border border-line rounded hover:bg-line/40 transition-colors"
           >
-            <span className="font-medium text-gray-900 dark:text-gray-100">
+            <span className="ledger-label !text-ink">
               Payment Schedule ({upcomingPayments.length} upcoming)
             </span>
             {showSchedule ? (
-              <ChevronUp className="h-4 w-4 text-gray-500" />
+              <ChevronUp className="h-4 w-4 text-ink-faint" />
             ) : (
-              <ChevronDown className="h-4 w-4 text-gray-500" />
+              <ChevronDown className="h-4 w-4 text-ink-faint" />
             )}
           </button>
-          
+
           {showSchedule && (
             <div className="mt-4 space-y-2 max-h-64 overflow-y-auto">
               {upcomingPayments.map((payment) => (
-                <div key={payment.month} className="flex justify-between items-center p-2 bg-white dark:bg-gray-800 rounded border border-gray-100 dark:border-gray-600">
+                <div key={payment.month} className="flex justify-between items-center p-2.5 bg-card border border-line rounded">
                   <div className="flex items-center space-x-3">
-                    <Calendar className="h-4 w-4 text-gray-400" />
+                    <Calendar className="h-4 w-4 text-ink-faint" />
                     <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      <p className="ledger-figure text-sm font-medium text-ink">
                         {formatDate(payment.date)}
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                      <p className="ledger-figure text-[11px] text-ink-faint">
                         Payment #{payment.month}
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-bold text-orange-600 dark:text-orange-400">
+                    <p className="ledger-figure text-sm font-semibold text-gold">
                       {formatCurrency(payment.payment)}
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <p className="ledger-figure text-[11px] text-ink-soft">
                       Balance: {formatCurrency(payment.remainingBalance)}
                     </p>
                   </div>
                 </div>
               ))}
-              
+
               {schedule.length > upcomingPayments.length && (
                 <div className="text-center pt-2">
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    ... and {schedule.length - upcomingPayments.length} more payments
+                  <p className="ledger-figure text-xs text-ink-faint">
+                    … and {schedule.length - upcomingPayments.length} more payments
                   </p>
                 </div>
               )}
@@ -168,47 +154,39 @@ function LoanCard({ loan, onDelete }) {
 
 export default function LoanRepayments() {
   const { loans, deleteLoan } = useBudget();
-
-  const handleDeleteLoan = (id) => {
-    if (window.confirm('Are you sure you want to delete this loan? This will also remove all associated repayment calculations.')) {
-      deleteLoan(id);
-    }
-  };
+  const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
   if (loans.length === 0) {
-    return (
-      <div className="py-12 px-4 bg-gray-50 dark:bg-gray-800">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center">
-            <div className="p-3 rounded-full bg-gray-100 dark:bg-gray-700 w-12 h-12 mx-auto mb-3 flex items-center justify-center">
-              <CreditCard className="h-6 w-6 text-gray-500 dark:text-gray-400" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No Loans</h3>
-            <p className="text-gray-600 dark:text-gray-400">Add a loan above to see repayment schedules and track your debt.</p>
-          </div>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
-    <div className="py-12 px-4 bg-gray-50 dark:bg-gray-800">
+    <div className="py-10 px-4">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3">Loans & Repayments</h2>
-          <p className="text-base text-gray-600 dark:text-gray-400">Track your loans and payment schedules</p>
+          <h2 className="font-display text-3xl font-semibold text-ink mb-2">Loans &amp; Repayments</h2>
+          <p className="text-ink-soft">Track your loans and payment schedules</p>
         </div>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {loans.map((loan) => (
-            <LoanCard 
-              key={loan.id} 
-              loan={loan} 
-              onDelete={handleDeleteLoan}
+            <LoanCard
+              key={loan.id}
+              loan={loan}
+              onDelete={setPendingDeleteId}
             />
           ))}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={pendingDeleteId !== null}
+        title="Delete loan"
+        message="Are you sure you want to delete this loan? This will also remove all associated repayment calculations."
+        confirmLabel="Delete"
+        onConfirm={() => { deleteLoan(pendingDeleteId); setPendingDeleteId(null); }}
+        onCancel={() => setPendingDeleteId(null)}
+      />
     </div>
   );
 }

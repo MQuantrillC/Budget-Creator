@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import { useBudget } from '@/context/BudgetContext';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import { useAuth } from '@/components/AuthProvider';
 import ProjectionsTable from '@/components/ProjectionsTable';
 import Charts from '@/components/Charts';
@@ -13,285 +15,221 @@ import PercentageBreakdown from '@/components/PercentageBreakdown';
 import FinancialHealthGoals from '@/components/FinancialHealthGoals';
 import LoanRepayments from '@/components/LoanRepayments';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/Card';
-import { Wallet, TrendingUp, TrendingDown, Flame, Calculator, Target, X, CreditCard } from 'lucide-react';
+import { Wallet, TrendingUp, TrendingDown, Scale, Target, X, CreditCard, BookOpen } from 'lucide-react';
 import ResetDataButton from '@/components/ResetDataButton';
 import ExchangeRatesTooltip from '@/components/ExchangeRatesTooltip';
-import { getLoanMonthlyPayment } from '@/utils/loanCalculations';
+import { getLoanMonthlyPayment, isLoanActiveDuring } from '@/utils/loanCalculations';
+import { makeConverters, monthlyRecurringTotal, formatMoney } from '@/utils/budgetMath';
 
-function MetricCard({ icon: Icon, title, value, tooltipText, color = 'default' }) {
-  const colorClasses = {
-    default: 'bg-gray-800 border-gray-700',
-    green: 'bg-green-900/20 border-green-800',
-    blue: 'bg-blue-900/20 border-blue-800',
-    red: 'bg-red-900/20 border-red-800',
-    orange: 'bg-orange-900/20 border-orange-800',
-  };
-
-  const iconColorClasses = {
-    default: 'text-gray-400',
-    green: 'text-green-400',
-    blue: 'text-blue-400',
-    red: 'text-red-400',
-    orange: 'text-orange-400',
+function MetricCard({ icon: Icon, title, value, tooltipText, color = 'ink' }) {
+  const accentClasses = {
+    ink: 'border-t-ink text-ink',
+    credit: 'border-t-credit text-credit-deep',
+    debit: 'border-t-debit text-debit-deep',
+    gold: 'border-t-gold text-gold',
+    inkblue: 'border-t-inkblue text-inkblue',
   };
 
   return (
     <Tooltip text={tooltipText}>
-      <div className={`${colorClasses[color]} border p-4 rounded-xl transition-all duration-200 hover:shadow-lg group cursor-pointer`}>
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
-            <p className="text-sm font-medium text-gray-400 mb-1">{title}</p>
-            <p className="text-xl font-bold text-gray-100">{value}</p>
-          </div>
-          <div className="flex-shrink-0 ml-4">
-            <div className={`p-2 rounded-full bg-gray-700 shadow-sm group-hover:shadow-md transition-shadow duration-200`}>
-              <Icon className={`h-5 w-5 ${iconColorClasses[color]}`} />
-            </div>
-          </div>
+      <div className={`ledger-card border-t-4 ${accentClasses[color].split(' ')[0]} p-4 w-full h-full transition-shadow hover:shadow-md cursor-default`}>
+        <div className="flex items-center justify-between mb-2">
+          <p className="ledger-label">{title}</p>
+          <Icon className={`h-4 w-4 ${accentClasses[color].split(' ')[1]}`} />
         </div>
+        <p className={`ledger-figure text-lg sm:text-xl font-semibold break-words ${accentClasses[color].split(' ')[1]}`}>{value}</p>
       </div>
     </Tooltip>
   );
 }
 
 export default function HomePage() {
-  const { 
-    costs, 
-    income, 
+  const {
+    costs,
+    income,
     loans,
-    currentCapital, 
-    settings, 
-    exchangeRates, 
-    setSettings, 
+    currentCapital,
+    settings,
+    exchangeRates,
+    setSettings,
     startingCapitalCurrency,
     deleteCost,
-    deleteIncome 
+    deleteIncome
   } = useBudget();
-  
+
   const { session, isGuest, isLoading: authLoading, signOut, showAuthModal } = useAuth();
 
-  const convertToBaseCurrency = (amount, currency) => {
-    if (!exchangeRates || currency === settings.baseCurrency) {
-      return amount;
-    }
-    const rate = exchangeRates[currency];
-    return rate ? amount / rate : amount;
-  }
+  const { toBase, toDisplay } = makeConverters(exchangeRates, settings.baseCurrency);
 
-  const convertToDisplayCurrency = (amount, fromCurrency, toCurrency) => {
-    if (!exchangeRates || fromCurrency === toCurrency) return amount;
-    
-    // First convert to base currency
-    const baseAmount = convertToBaseCurrency(amount, fromCurrency);
-    
-    // Then convert to display currency
-    if (toCurrency === settings.baseCurrency) return baseAmount;
-    const displayRate = exchangeRates[toCurrency];
-    return displayRate ? baseAmount * displayRate : baseAmount;
-  };
-
-  // Convert starting capital to display currency
-  const currentCapitalInDisplayCurrency = convertToDisplayCurrency(
-    currentCapital, 
-    startingCapitalCurrency, 
+  // Starting capital in display currency
+  const currentCapitalInDisplayCurrency = toDisplay(
+    currentCapital,
+    startingCapitalCurrency,
     settings.baseCurrency
   );
 
-  const totalMonthlyCosts = costs
-    .filter(cost => cost.category === 'monthly')
-    .reduce((acc, cost) => acc + convertToBaseCurrency(cost.amount, cost.currency), 0);
+  // Monthly totals include ALL recurring frequencies, normalized to monthly
+  const totalMonthlyCosts = monthlyRecurringTotal(costs, toBase);
+  const totalMonthlyIncome = monthlyRecurringTotal(income, toBase);
 
-  const totalMonthlyLoanPayments = loans
-    .reduce((acc, loan) => {
-      const monthlyPayment = getLoanMonthlyPayment(loan);
-      return acc + convertToBaseCurrency(monthlyPayment, loan.currency);
-    }, 0);
+  // Loan payments for loans active this month
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const totalMonthlyLoanPayments = loans.reduce((acc, loan) => {
+    if (!isLoanActiveDuring(loan, monthStart, monthEnd)) return acc;
+    return acc + toBase(getLoanMonthlyPayment(loan), loan.currency);
+  }, 0);
 
-  const totalMonthlyIncome = income
-    .filter(inc => inc.category === 'monthly')
-    .reduce((acc, inc) => acc + convertToBaseCurrency(inc.amount, inc.currency), 0);
-  
   const totalMonthlyCostsWithLoans = totalMonthlyCosts + totalMonthlyLoanPayments;
-  const burnRate = totalMonthlyIncome - totalMonthlyCostsWithLoans;
+  const netMonthlyFlow = totalMonthlyIncome - totalMonthlyCostsWithLoans;
+  const spendRatio = totalMonthlyIncome > 0 ? totalMonthlyCostsWithLoans / totalMonthlyIncome : 0;
 
-  const handleDeleteCost = (id) => {
-    if (window.confirm('Are you sure you want to delete this expense?')) {
-      deleteCost(id);
-    }
+  // { type: 'cost' | 'income', id } — entry awaiting delete confirmation
+  const [pendingDelete, setPendingDelete] = useState(null);
+
+  const confirmPendingDelete = () => {
+    if (!pendingDelete) return;
+    if (pendingDelete.type === 'cost') deleteCost(pendingDelete.id);
+    else deleteIncome(pendingDelete.id);
+    setPendingDelete(null);
   };
 
-  const handleDeleteIncome = (id) => {
-    if (window.confirm('Are you sure you want to delete this income?')) {
-      deleteIncome(id);
-    }
-  };
-
-  // Show loading only if auth is still loading or if we have auth but no exchange rates
   if (authLoading || (!authLoading && (session || isGuest) && !exchangeRates)) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-paper flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
-          <div className="text-gray-400 text-lg">
-            {authLoading ? 'Loading...' : 'Loading financial data...'}
+          <BookOpen className="h-10 w-10 text-credit mx-auto mb-4 animate-pulse" />
+          <div className="ledger-label">
+            {authLoading ? 'Opening the books…' : 'Fetching exchange rates…'}
           </div>
         </div>
       </div>
     );
   }
 
-  // If auth is done but no session and not guest, let AuthModal show (return empty content)
   if (!authLoading && !session && !isGuest) {
-    return <div className="min-h-screen bg-gray-900"></div>;
+    return <div className="min-h-screen bg-paper"></div>;
   }
 
+  const entryLedgerRow = (entry, sign, type) => (
+    <div key={entry.id} className="flex justify-between items-start px-4 py-3 border-b border-line last:border-b-0 group">
+      <div className="flex-1 min-w-0">
+        <p className="font-medium text-ink text-sm truncate">{entry.description}</p>
+        <p className="ledger-figure text-[11px] text-ink-faint uppercase tracking-wide">{entry.category}</p>
+        {entry.notes && (
+          <p className="text-xs text-ink-soft mt-1 italic">&ldquo;{entry.notes}&rdquo;</p>
+        )}
+      </div>
+      <div className="flex items-center space-x-2 ml-3">
+        <p className={`ledger-figure text-sm font-semibold ${sign === '-' ? 'text-debit' : 'text-credit-deep'}`}>
+          {sign}{formatMoney(entry.amount, entry.currency, { minimumFractionDigits: 2 })}
+        </p>
+        {/* Always visible on touch devices; hover-revealed on desktop */}
+        <button
+          onClick={() => setPendingDelete({ type, id: entry.id })}
+          className="p-1.5 text-ink-faint hover:text-debit hover:bg-debit-pale rounded transition-colors sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"
+          title="Delete entry"
+          aria-label={`Delete ${entry.description}`}
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-gray-900">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-gray-900/80 backdrop-blur-sm border-b border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          {/* Auth Buttons */}
+    <div className="min-h-screen">
+      {/* Top bar */}
+      <div className="sticky top-0 z-10 bg-paper/95 backdrop-blur-sm border-b-2 border-ink">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
           <div className="flex items-center space-x-3">
+            <BookOpen className="h-5 w-5 text-credit-deep hidden sm:block" />
+            <span className="ledger-label hidden md:inline">Budget Creator · Personal Ledger</span>
             {(isGuest || (!session && !authLoading)) && (
               <>
-                <button
-                  onClick={showAuthModal}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                >
+                <button onClick={showAuthModal} className="btn btn-ink !py-1.5 !px-3 text-xs">
                   Log In
                 </button>
-                <button
-                  onClick={showAuthModal}
-                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-                >
+                <button onClick={showAuthModal} className="btn btn-primary !py-1.5 !px-3 text-xs">
                   Sign Up
                 </button>
+                {isGuest && <span className="ledger-label text-ink-faint">Guest</span>}
               </>
             )}
             {session && (
               <div className="flex items-center space-x-3">
-                <span className="text-sm text-gray-300">
-                  Welcome, {session.user.user_metadata?.first_name || session.user.email.split('@')[0]}!
+                <span className="text-sm text-ink-soft">
+                  Welcome, {session.user.user_metadata?.first_name || session.user.email.split('@')[0]}
                 </span>
-                <button
-                  onClick={signOut}
-                  className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white text-xs font-medium rounded-md transition-colors"
-                >
+                <button onClick={signOut} className="btn btn-secondary !py-1 !px-2.5 text-xs">
                   Sign Out
                 </button>
               </div>
             )}
-            {isGuest && (
-              <span className="text-sm text-gray-400">Guest Mode</span>
-            )}
           </div>
-          
-          {/* Exchange Rates */}
+
           <ExchangeRatesTooltip />
         </div>
       </div>
 
-      {/* Hero Section with Entry Forms */}
-      <div className="relative py-8 px-4 bg-gray-900">
-        <div className="max-w-4xl mx-auto text-center mb-6">
-          <div className="flex items-center justify-center mb-4">
-            <div className="p-3 rounded-full bg-blue-900/30 shadow-sm">
-              <Calculator className="h-6 w-6 text-blue-400" />
-            </div>
-          </div>
-          <h1 className="text-3xl font-bold text-gray-100 mb-3">
+      {/* Masthead */}
+      <div className="pt-12 pb-8 px-4">
+        <div className="max-w-4xl mx-auto text-center">
+          <p className="ledger-label mb-3">Est. for everyday budgets</p>
+          <h1 className="font-display text-4xl sm:text-5xl font-bold text-ink mb-3">
             Budget Creator
           </h1>
-          <p className="text-lg text-gray-400 mb-6">
-            Take control of your finances with intelligent budgeting and projections
+          <div className="ornament-rule max-w-xs mx-auto mb-4">
+            <span className="text-line-strong text-xs">◆</span>
+          </div>
+          <p className="text-lg text-ink-soft">
+            Simple personal budgeting, kept like a proper ledger.
           </p>
         </div>
+      </div>
 
-        {/* Main Entry Section - The Dominant Component */}
+      {/* Entry slip */}
+      <div className="pb-10 px-4">
         <div className="max-w-4xl mx-auto">
-          <div className="bg-gray-800 rounded-3xl shadow-xl border border-gray-700 overflow-hidden fade-in">
-            <div className="p-6 lg:p-8">
-              <div className="space-y-6">
-                {/* Current Capital Section */}
-                <div className="text-center">
-                  <div className="flex items-center justify-center mb-3">
-                    <div className="p-2 rounded-full bg-blue-900/30">
-                      <Target className="h-5 w-5 text-blue-400" />
-                    </div>
-                  </div>
-                  <h2 className="text-xl font-bold text-gray-100 mb-4">Set Your Starting Capital</h2>
-                  <ClientOnly>
-                    <CurrentCapitalForm />
-                  </ClientOnly>
+          <div className="ledger-card overflow-hidden fade-in">
+            <div className="border-b-2 border-ink px-6 py-4 bg-card-deep flex items-center justify-between">
+              <h2 className="font-display text-xl font-semibold text-ink">New Entry Slip</h2>
+              <span className="ledger-label text-ink-faint hidden sm:inline">Form № 1</span>
+            </div>
+            <div className="p-6 lg:p-8 space-y-8">
+              {/* Starting capital */}
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-2 mb-4">
+                  <Target className="h-4 w-4 text-credit-deep" />
+                  <h3 className="ledger-label !text-ink">Opening Balance</h3>
                 </div>
-
-                {/* Divider */}
-                <div className="relative py-2">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gray-700"></div>
-                  </div>
-                  <div className="relative flex justify-center">
-                    <div className="bg-gray-800 px-3 text-gray-400 text-xs font-medium">
-                      Add Income & Expenses
-                    </div>
-                  </div>
-                </div>
-
-                {/* Entry Form Section */}
-                <div className="text-center">
-                  <div className="flex items-center justify-center mb-3">
-                    <div className="p-2 rounded-full bg-blue-900/30">
-                      <Wallet className="h-5 w-5 text-blue-400" />
-                    </div>
-                  </div>
-                  <h2 className="text-xl font-bold text-gray-100 mb-4">Track Your Finances</h2>
-                  <EntryForm />
-                </div>
+                <ClientOnly>
+                  <CurrentCapitalForm />
+                </ClientOnly>
               </div>
+
+              <div className="ornament-rule">
+                <span className="ledger-label">Record Income &amp; Expenses</span>
+              </div>
+
+              <EntryForm />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Metrics Section */}
-      <div className="py-12 px-4 bg-gray-900">
+      {/* Overview */}
+      <div className="py-10 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-gray-100 mb-3">Financial Overview</h2>
-            
-            {/* Income vs Expenses Progress Indicator */}
-            {totalMonthlyIncome > 0 && (
-              <div className="max-w-md mx-auto mb-6">
-                <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
-                  <p className="text-sm text-gray-400 mb-2">Monthly Spending vs Income</p>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-gray-300">
-                      You&apos;re spending {totalMonthlyCostsWithLoans > 0 ? Math.round((totalMonthlyCostsWithLoans / totalMonthlyIncome) * 100) : 0}% of your income
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-700 rounded-full h-3">
-                    <div 
-                      className={`h-3 rounded-full transition-all duration-300 ${
-                        (totalMonthlyCostsWithLoans / totalMonthlyIncome) <= 0.5 ? 'bg-green-500' :
-                        (totalMonthlyCostsWithLoans / totalMonthlyIncome) <= 0.8 ? 'bg-yellow-500' : 'bg-red-500'
-                      }`}
-                      style={{ width: `${Math.min((totalMonthlyCostsWithLoans / totalMonthlyIncome) * 100, 100)}%` }}
-                    ></div>
-                  </div>
-                  <div className="flex justify-between text-xs text-gray-400 mt-1">
-                    <span>0%</span>
-                    <span>100%</span>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            <div className="flex justify-center items-center space-x-2 mt-2">
-              <p className="text-sm text-gray-400">Display Currency:</p>
+            <h2 className="font-display text-3xl font-semibold text-ink mb-2">Account Overview</h2>
+            <div className="flex justify-center items-center space-x-2 mt-3">
+              <p className="ledger-label">Display Currency</p>
               <select
                 value={settings.baseCurrency}
                 onChange={(e) => setSettings({ ...settings, baseCurrency: e.target.value })}
-                className="px-2 py-1 text-sm bg-gray-700 border border-gray-600 rounded-lg appearance-none focus:ring-1 focus:ring-blue-400 focus:border-blue-400 text-gray-100"
+                className="ledger-input !w-auto !py-1 text-sm ledger-figure"
               >
                 {settings.availableCurrencies.map(c => (
                   <option key={c.code} value={c.code}>{c.code}</option>
@@ -299,179 +237,149 @@ export default function HomePage() {
               </select>
             </div>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            <MetricCard 
-              icon={Wallet} 
-              title="Current Capital" 
-              value={new Intl.NumberFormat('en-US', { style: 'currency', currency: settings.baseCurrency }).format(currentCapitalInDisplayCurrency)}
-              tooltipText={`Your starting capital: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: startingCapitalCurrency }).format(currentCapital)} (${startingCapitalCurrency}), converted to ${settings.baseCurrency}.`}
-              color="blue"
+
+          {/* Spending vs income meter */}
+          {totalMonthlyIncome > 0 && (
+            <div className="max-w-md mx-auto mb-8">
+              <div className="ledger-card p-4">
+                <p className="ledger-label mb-2">Monthly Spending vs Income</p>
+                <p className="text-sm text-ink-soft mb-2">
+                  You&apos;re spending <span className="ledger-figure font-semibold text-ink">{Math.round(spendRatio * 100)}%</span> of your income
+                </p>
+                <div className="w-full bg-card-deep border border-line rounded-sm h-3 overflow-hidden">
+                  <div
+                    className={`h-full transition-all duration-300 ${
+                      spendRatio <= 0.5 ? 'bg-credit' : spendRatio <= 0.8 ? 'bg-gold' : 'bg-debit'
+                    }`}
+                    style={{ width: `${Math.min(spendRatio * 100, 100)}%` }}
+                  ></div>
+                </div>
+                <div className="flex justify-between ledger-figure text-[10px] text-ink-faint mt-1">
+                  <span>0%</span>
+                  <span>100%</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+            <MetricCard
+              icon={Wallet}
+              title="Current Capital"
+              value={formatMoney(currentCapitalInDisplayCurrency, settings.baseCurrency)}
+              tooltipText={`Your starting capital: ${formatMoney(currentCapital, startingCapitalCurrency)} (${startingCapitalCurrency}), converted to ${settings.baseCurrency}.`}
+              color="inkblue"
             />
-            <MetricCard 
+            <MetricCard
               icon={TrendingDown}
               title="Monthly Costs"
-              value={new Intl.NumberFormat('en-US', { style: 'currency', currency: settings.baseCurrency }).format(totalMonthlyCosts)}
-              tooltipText="Total of all recurring monthly costs, converted to your base currency."
-              color="red"
+              value={formatMoney(totalMonthlyCosts, settings.baseCurrency)}
+              tooltipText="All recurring costs (weekly, monthly, yearly…) normalized to a monthly amount, converted to your display currency."
+              color="debit"
             />
-            <MetricCard 
+            <MetricCard
               icon={CreditCard}
               title="Loan Payments"
-              value={new Intl.NumberFormat('en-US', { style: 'currency', currency: settings.baseCurrency }).format(totalMonthlyLoanPayments)}
-              tooltipText="Total monthly loan payments across all active loans."
-              color="orange"
+              value={formatMoney(totalMonthlyLoanPayments, settings.baseCurrency)}
+              tooltipText="Total monthly loan payments across loans active this month."
+              color="gold"
             />
-            <MetricCard 
+            <MetricCard
               icon={TrendingUp}
               title="Monthly Income"
-              value={new Intl.NumberFormat('en-US', { style: 'currency', currency: settings.baseCurrency }).format(totalMonthlyIncome)}
-              tooltipText="Total of all recurring monthly income, converted to your base currency."
-              color="green"
+              value={formatMoney(totalMonthlyIncome, settings.baseCurrency)}
+              tooltipText="All recurring income normalized to a monthly amount, converted to your display currency."
+              color="credit"
             />
-            <MetricCard 
-              icon={Flame}
-              title="Net Monthly Flow"
-              value={new Intl.NumberFormat('en-US', { style: 'currency', currency: settings.baseCurrency }).format(burnRate)}
-              tooltipText="The difference between your monthly income and monthly costs including loan payments (surplus or deficit)."
-              color={burnRate >= 0 ? 'green' : 'red'}
-            />
+            <div className="col-span-2 lg:col-span-1">
+              <MetricCard
+                icon={Scale}
+                title="Net Monthly Flow"
+                value={formatMoney(netMonthlyFlow, settings.baseCurrency)}
+                tooltipText="Monthly income minus monthly costs and loan payments (surplus or deficit)."
+                color={netMonthlyFlow >= 0 ? 'credit' : 'debit'}
+              />
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Data Overview Section */}
-      <div className="py-12 px-4 bg-gray-50 dark:bg-gray-800">
+      {/* Transaction history */}
+      <div className="py-10 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-8">
-            <div className="flex justify-center items-center mb-3 space-x-4">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Transaction History</h2>
-              <ResetDataButton />
-            </div>
-            <p className="text-base text-gray-600 dark:text-gray-400">Overview of your income and expenses</p>
+            <h2 className="font-display text-3xl font-semibold text-ink mb-2">Transaction Register</h2>
+            <p className="text-ink-soft mb-3">Every debit and credit on record</p>
+            <ResetDataButton />
           </div>
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center">
-                  <TrendingDown className="h-5 w-5 text-red-600 dark:text-red-400 mr-2" />
+            <Card>
+              <CardHeader className="!pb-3">
+                <CardTitle className="!text-xl flex items-center">
+                  <TrendingDown className="h-5 w-5 text-debit mr-2" />
                   Expenses
+                  <span className="ledger-label text-ink-faint ml-auto">Debits</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="pt-6">
-                <div className="space-y-3">
-                  {costs.length > 0 ? costs.map((cost) => (
-                    <div key={cost.id} className="flex justify-between items-start p-3 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-100 dark:border-gray-600 hover:shadow-sm transition-shadow group">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-gray-800 dark:text-gray-200 text-sm truncate">{cost.description}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{cost.category}</p>
-                        {cost.notes && (
-                          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 italic">&ldquo;{cost.notes}&rdquo;</p>
-                        )}
-                      </div>
-                      <div className="flex items-center space-x-3 ml-4">
-                        <div className="text-right">
-                          <p className="font-mono text-base font-bold text-red-600 dark:text-red-400">
-                            -{new Intl.NumberFormat('en-US', { style: 'currency', currency: cost.currency, minimumFractionDigits: 2 }).format(cost.amount)}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => handleDeleteCost(cost.id)}
-                          className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors opacity-0 group-hover:opacity-100"
-                          title="Delete expense"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                  )) : (
-                    <div className="text-center py-8">
-                      <div className="p-3 rounded-full bg-gray-100 dark:bg-gray-700 w-12 h-12 mx-auto mb-3 flex items-center justify-center">
-                        <TrendingDown className="h-6 w-6 text-gray-500 dark:text-gray-400" />
-                      </div>
-                      <p className="text-gray-600 dark:text-gray-400">No expenses recorded yet.</p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
+              <div className="pb-2">
+                {costs.length > 0 ? costs.map((cost) => entryLedgerRow(cost, '-', 'cost')) : (
+                  <div className="text-center py-10">
+                    <TrendingDown className="h-6 w-6 text-ink-faint mx-auto mb-3" />
+                    <p className="text-ink-soft text-sm">No expenses recorded yet.</p>
+                  </div>
+                )}
+              </div>
             </Card>
 
-            <Card className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center">
-                  <TrendingUp className="h-5 w-5 text-blue-600 dark:text-blue-400 mr-2" />
+            <Card>
+              <CardHeader className="!pb-3">
+                <CardTitle className="!text-xl flex items-center">
+                  <TrendingUp className="h-5 w-5 text-credit-deep mr-2" />
                   Income
+                  <span className="ledger-label text-ink-faint ml-auto">Credits</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="pt-6">
-                <div className="space-y-3">
-                  {income.length > 0 ? income.map((inc) => (
-                    <div key={inc.id} className="flex justify-between items-start p-3 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-100 dark:border-gray-600 hover:shadow-sm transition-shadow group">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-gray-800 dark:text-gray-200 text-sm truncate">{inc.description}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{inc.category}</p>
-                        {inc.notes && (
-                          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 italic">&ldquo;{inc.notes}&rdquo;</p>
-                        )}
-                      </div>
-                      <div className="flex items-center space-x-3 ml-4">
-                        <div className="text-right">
-                          <p className="font-mono text-base font-bold text-blue-600 dark:text-blue-400">
-                            +{new Intl.NumberFormat('en-US', { style: 'currency', currency: inc.currency, minimumFractionDigits: 2 }).format(inc.amount)}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => handleDeleteIncome(inc.id)}
-                          className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors opacity-0 group-hover:opacity-100"
-                          title="Delete income"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                  )) : (
-                    <div className="text-center py-8">
-                      <div className="p-3 rounded-full bg-gray-100 dark:bg-gray-700 w-12 h-12 mx-auto mb-3 flex items-center justify-center">
-                        <TrendingUp className="h-6 w-6 text-gray-500 dark:text-gray-400" />
-                      </div>
-                      <p className="text-gray-600 dark:text-gray-400">No income recorded yet.</p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
+              <div className="pb-2">
+                {income.length > 0 ? income.map((inc) => entryLedgerRow(inc, '+', 'income')) : (
+                  <div className="text-center py-10">
+                    <TrendingUp className="h-6 w-6 text-ink-faint mx-auto mb-3" />
+                    <p className="text-ink-soft text-sm">No income recorded yet.</p>
+                  </div>
+                )}
+              </div>
             </Card>
           </div>
         </div>
       </div>
-      
-      {/* Loans & Repayments Section */}
+
+      {/* Loans & Repayments */}
       {loans.length > 0 && (
         <ClientOnly>
           <LoanRepayments />
         </ClientOnly>
       )}
-      
-      {/* Percentage Breakdown Section */}
+
+      {/* Percentage Breakdown */}
       <ClientOnly>
         <PercentageBreakdown />
       </ClientOnly>
-      
-      {/* Financial Health & Goals Section */}
+
+      {/* Financial Health & Goals */}
       <ClientOnly>
         <FinancialHealthGoals />
       </ClientOnly>
-      
-      {/* Charts Section */}
-      <div className="py-16 px-4 bg-white dark:bg-gray-900">
+
+      {/* Charts */}
+      <div className="py-12 px-4">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4">Financial Projections</h2>
-            <p className="text-lg text-gray-600 dark:text-gray-400">Visualize your financial future</p>
+          <div className="text-center mb-10">
+            <h2 className="font-display text-3xl font-semibold text-ink mb-2">Financial Projections</h2>
+            <p className="text-ink-soft">Your balance, projected forward</p>
           </div>
-          
-          <Card className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700">
-            <CardContent className="p-8">
+
+          <Card>
+            <CardContent className="p-6 sm:p-8">
               <ClientOnly>
                 <FinancialProjectionControls />
                 <Charts />
@@ -480,17 +388,17 @@ export default function HomePage() {
           </Card>
         </div>
       </div>
-      
-      {/* Projections Table Section */}
-      <div className="py-16 px-4 bg-gray-50 dark:bg-gray-800">
+
+      {/* Projections table */}
+      <div className="py-12 px-4">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4">Detailed Projections</h2>
-            <p className="text-lg text-gray-600 dark:text-gray-400">Month-by-month financial breakdown</p>
+          <div className="text-center mb-10">
+            <h2 className="font-display text-3xl font-semibold text-ink mb-2">Detailed Projections</h2>
+            <p className="text-ink-soft">Period-by-period breakdown</p>
           </div>
-          
-          <Card className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700">
-            <CardContent className="p-8">
+
+          <Card>
+            <CardContent className="p-6 sm:p-8">
               <ClientOnly>
                 <ProjectionsTable />
               </ClientOnly>
@@ -498,6 +406,15 @@ export default function HomePage() {
           </Card>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Delete entry"
+        message={`Are you sure you want to delete this ${pendingDelete?.type === 'cost' ? 'expense' : 'income'} entry? This cannot be undone.`}
+        confirmLabel="Delete"
+        onConfirm={confirmPendingDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
-} 
+}
