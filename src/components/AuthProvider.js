@@ -25,6 +25,10 @@ export default function AuthProvider({ children }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
+      // A real session supersedes guest mode (e.g. guest who then logs in)
+      if (session) {
+        setIsGuest(false);
+      }
       setIsLoading(false);
     });
 

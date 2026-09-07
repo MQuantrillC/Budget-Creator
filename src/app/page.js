@@ -146,7 +146,7 @@ export default function HomePage() {
           <div className="flex items-center space-x-3">
             <BookOpen className="h-5 w-5 text-credit-deep hidden sm:block" />
             <span className="ledger-label hidden md:inline">Budget Creator · Personal Ledger</span>
-            {(isGuest || (!session && !authLoading)) && (
+            {!session && !authLoading && (
               <>
                 <button onClick={showAuthModal} className="btn btn-ink !py-1.5 !px-3 text-xs">
                   Log In
